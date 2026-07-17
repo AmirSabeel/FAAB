@@ -280,7 +280,7 @@ export function AdminOrders() {
                   {/* Bottom row */}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
                     <span className="text-lg font-semibold">
-                      ${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      ₹{order.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -383,7 +383,7 @@ export function AdminOrders() {
                                   </div>
                                 </div>
                                 <span className="text-sm font-semibold whitespace-nowrap">
-                                  ${(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                  ₹{(item.price * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                             ))}
@@ -395,23 +395,23 @@ export function AdminOrders() {
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Subtotal</span>
-                              <span>${order.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              <span>₹{order.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Shipping</span>
                               <span>
                                 {order.shipping === 0
                                   ? 'Free'
-                                  : `$${order.shipping.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                                  : `₹${order.shipping.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Tax</span>
-                              <span>${order.tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              <span>₹{order.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex items-center justify-between text-base font-semibold pt-2 border-t border-border/30">
                               <span>Total</span>
-                              <span>${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              <span>₹{order.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                           </div>
                         </div>

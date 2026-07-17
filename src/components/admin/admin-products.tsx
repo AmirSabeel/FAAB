@@ -407,11 +407,11 @@ export function AdminProducts() {
                   {/* Price */}
                   <div className="col-span-2">
                     <span className="text-sm font-semibold">
-                      ${product.price.toLocaleString()}
+                      ₹{product.price.toLocaleString('en-IN')}
                     </span>
                     {product.originalPrice && product.originalPrice > product.price && (
                       <span className="text-xs text-muted-foreground line-through ml-1.5">
-                        ${product.originalPrice.toLocaleString()}
+                        ₹{product.originalPrice.toLocaleString('en-IN')}
                       </span>
                     )}
                   </div>

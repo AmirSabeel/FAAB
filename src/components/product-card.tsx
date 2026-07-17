@@ -134,11 +134,11 @@ export default function ProductCard({
 
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold text-foreground">
-            ${price.toLocaleString()}
+            ₹{price.toLocaleString('en-IN')}
           </span>
           {originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${originalPrice.toLocaleString()}
+              ₹{originalPrice.toLocaleString('en-IN')}
             </span>
           )}
         </div>

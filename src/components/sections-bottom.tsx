@@ -352,7 +352,7 @@ const features = [
   {
     icon: Truck,
     title: 'Free Shipping',
-    description: 'Complimentary delivery on all orders over $200',
+    description: 'Complimentary delivery on all orders over ₹16,600',
   },
   {
     icon: RefreshCw,
@@ -502,7 +502,7 @@ const faqs = [
   {
     question: 'Do you offer international shipping?',
     answer:
-      'Yes, we ship to over 15 countries worldwide. Shipping rates and delivery times vary by location. Free international shipping on orders over $500.',
+      'Yes, we ship to over 15 countries worldwide. Shipping rates and delivery times vary by location. Free international shipping on orders over ₹41,500.',
   },
   {
     question: 'How can I track my order?',

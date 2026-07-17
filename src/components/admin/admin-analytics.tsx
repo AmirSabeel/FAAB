@@ -19,11 +19,11 @@ import { cn } from '@/lib/utils'
 // ---------- Demo Data ----------
 
 const CATEGORY_DATA = [
-  { name: "Women's Fashion", value: 12480, color: '#C5A55A' },
-  { name: "Men's Fashion", value: 8320, color: '#A68A3E' },
-  { name: 'Accessories', value: 9640, color: '#8B7335' },
-  { name: 'Footwear', value: 5280, color: '#D4B96E' },
-  { name: 'Jewelry', value: 3980, color: '#E2CC8F' },
+  { name: "Women's Fashion", value: 1035840, color: '#C5A55A' },
+  { name: "Men's Fashion", value: 690560, color: '#A68A3E' },
+  { name: 'Accessories', value: 800120, color: '#8B7335' },
+  { name: 'Footwear', value: 438240, color: '#D4B96E' },
+  { name: 'Jewelry', value: 330340, color: '#E2CC8F' },
 ]
 
 function generateOrdersData() {
@@ -37,7 +37,7 @@ function generateOrdersData() {
     data.push({
       date: `${month} ${day}`,
       orders: Math.floor(3 + Math.random() * 10),
-      revenue: Math.floor(800 + Math.random() * 4000),
+      revenue: Math.floor(66400 + Math.random() * 332000),
     })
   }
   return data
@@ -62,7 +62,7 @@ function CustomPieTooltip({ active, payload }: { active?: boolean; payload?: Arr
         <span className="font-medium">{payload[0].name}</span>
       </div>
       <p className="text-muted-foreground mt-0.5">
-        ${payload[0].value.toLocaleString()}
+        ₹{payload[0].value.toLocaleString('en-IN')}
       </p>
     </div>
   )
@@ -75,7 +75,7 @@ function CustomBarTooltip({ active, payload, label }: { active?: boolean; payloa
       <p className="font-medium">{label}</p>
       {payload.map((entry, i) => (
         <p key={i} className="text-muted-foreground">
-          {entry.dataKey === 'orders' ? 'Orders' : 'Revenue'}: {entry.dataKey === 'revenue' ? `$${entry.value.toLocaleString()}` : entry.value}
+          {entry.dataKey === 'orders' ? 'Orders' : 'Revenue'}: {entry.dataKey === 'revenue' ? `₹${entry.value.toLocaleString('en-IN')}` : entry.value}
         </p>
       ))}
     </div>
@@ -130,7 +130,7 @@ export function AdminAnalytics() {
                     <span className="text-sm font-medium">{item.name}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">${item.value.toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground">₹{item.value.toLocaleString('en-IN')}</span>
                     <span className="text-xs text-muted-foreground w-10 text-right">{pct}%</span>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export function AdminAnalytics() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Avg. Order Value</p>
-              <p className="text-2xl font-bold">$527</p>
+              <p className="text-2xl font-bold">₹43,741</p>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2">
@@ -236,7 +236,7 @@ export function AdminAnalytics() {
               <TrendingUp className="w-3 h-3" />
               +12.4%
             </span>
-            <span className="text-xs text-muted-foreground">vs last month ($469)</span>
+            <span className="text-xs text-muted-foreground">vs last month (₹38,927)</span>
           </div>
         </div>
       </div>

@@ -249,8 +249,8 @@ const trendingProducts = [
   {
     id: 'trend-1',
     name: 'Silk Blend Blazer',
-    price: 489,
-    originalPrice: 699,
+    price: 40587,
+    originalPrice: 58017,
     image:
       'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=667&fit=crop&q=80',
     rating: 4.8,
@@ -260,7 +260,7 @@ const trendingProducts = [
   {
     id: 'trend-2',
     name: 'Cashmere Sweater',
-    price: 329,
+    price: 27307,
     image:
       'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&h=667&fit=crop&q=80',
     rating: 4.9,
@@ -270,7 +270,7 @@ const trendingProducts = [
   {
     id: 'trend-3',
     name: 'Leather Tote Bag',
-    price: 599,
+    price: 49717,
     image:
       'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=500&h=667&fit=crop&q=80',
     rating: 4.7,
@@ -279,8 +279,8 @@ const trendingProducts = [
   {
     id: 'trend-4',
     name: 'Minimal Watch',
-    price: 249,
-    originalPrice: 349,
+    price: 20667,
+    originalPrice: 28967,
     image:
       'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=500&h=667&fit=crop&q=80',
     rating: 4.6,
@@ -290,7 +290,7 @@ const trendingProducts = [
   {
     id: 'trend-5',
     name: 'Linen Shirt',
-    price: 189,
+    price: 15687,
     image:
       'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&h=667&fit=crop&q=80',
     rating: 4.8,
@@ -300,7 +300,7 @@ const trendingProducts = [
   {
     id: 'trend-6',
     name: 'Designer Sunglasses',
-    price: 279,
+    price: 23157,
     image:
       'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500&h=667&fit=crop&q=80',
     rating: 4.5,
@@ -309,7 +309,7 @@ const trendingProducts = [
   {
     id: 'trend-7',
     name: 'Suede Ankle Boots',
-    price: 449,
+    price: 37267,
     image:
       'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=500&h=667&fit=crop&q=80',
     rating: 4.7,
@@ -319,7 +319,7 @@ const trendingProducts = [
   {
     id: 'trend-8',
     name: 'Gold Chain Necklace',
-    price: 199,
+    price: 16517,
     image:
       'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&h=667&fit=crop&q=80',
     rating: 4.9,
@@ -356,7 +356,7 @@ const newArrivals = [
   {
     id: 'new-1',
     name: 'Oversized Coat',
-    price: 589,
+    price: 48887,
     image:
       'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=500&h=667&fit=crop&q=80',
     rating: 4.8,
@@ -366,7 +366,7 @@ const newArrivals = [
   {
     id: 'new-2',
     name: 'Silk Scarf',
-    price: 149,
+    price: 12367,
     image:
       'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=500&h=667&fit=crop&q=80',
     rating: 4.9,
@@ -376,7 +376,7 @@ const newArrivals = [
   {
     id: 'new-3',
     name: 'Wool Trousers',
-    price: 269,
+    price: 22327,
     image:
       'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=500&h=667&fit=crop&q=80',
     rating: 4.7,
@@ -386,7 +386,7 @@ const newArrivals = [
   {
     id: 'new-4',
     name: 'Canvas Sneakers',
-    price: 199,
+    price: 16517,
     image:
       'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=500&h=667&fit=crop&q=80',
     rating: 4.6,
@@ -396,7 +396,7 @@ const newArrivals = [
   {
     id: 'new-5',
     name: 'Ceramic Watch',
-    price: 389,
+    price: 32287,
     image:
       'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=500&h=667&fit=crop&q=80',
     rating: 4.8,
@@ -406,7 +406,7 @@ const newArrivals = [
   {
     id: 'new-6',
     name: 'Leather Belt',
-    price: 129,
+    price: 10707,
     image:
       'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=667&fit=crop&q=80',
     rating: 4.5,

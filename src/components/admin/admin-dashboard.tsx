@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import { useAdminStore } from './admin-store'
 
 const kpiConfigs = [
-  { key: 'totalRevenue', label: 'Total Revenue', icon: DollarSign, format: (v: number) => `$${v.toLocaleString()}`, subtitle: '+12% from last month' },
+  { key: 'totalRevenue', label: 'Total Revenue', icon: DollarSign, format: (v: number) => `₹${v.toLocaleString('en-IN')}`, subtitle: '+12% from last month' },
   { key: 'orderCount', label: 'Total Orders', icon: ShoppingCart, format: (v: number) => v.toLocaleString(), subtitle: '+8% from last month' },
   { key: 'customerCount', label: 'Total Customers', icon: Users, format: (v: number) => v.toLocaleString(), subtitle: '+5% from last month' },
   { key: 'productCount', label: 'Total Products', icon: Package, format: (v: number) => v.toLocaleString(), subtitle: '2 new this week' },
@@ -145,7 +145,7 @@ function CustomTooltip({
   return (
     <div className="glass rounded-xl px-4 py-3 shadow-luxury">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className="text-sm font-semibold">${payload[0].value.toLocaleString()}</p>
+      <p className="text-sm font-semibold">₹{payload[0].value.toLocaleString('en-IN')}</p>
     </div>
   )
 }
@@ -238,7 +238,7 @@ export function AdminDashboard() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
@@ -315,7 +315,7 @@ export function AdminDashboard() {
                     {order.status}
                   </span>
                   <p className="text-sm font-semibold shrink-0">
-                    ${order.total.toLocaleString()}
+                    ₹{order.total.toLocaleString('en-IN')}
                   </p>
                 </div>
               ))}
@@ -346,7 +346,7 @@ export function AdminDashboard() {
                     </p>
                   </div>
                   <p className="text-sm font-semibold ml-auto shrink-0">
-                    ${product.revenue.toLocaleString()}
+                    ₹{product.revenue.toLocaleString('en-IN')}
                   </p>
                 </div>
               ))}

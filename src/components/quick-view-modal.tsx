@@ -47,7 +47,7 @@ const COLORS = [
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'] as const;
 
 const FEATURES = [
-  'Free shipping on orders over $200',
+  'Free shipping on orders over ₹16,600',
   '30-day hassle-free returns',
   'Premium quality guaranteed',
   'Gift wrapping available',
@@ -254,12 +254,12 @@ function QuickViewPanel({
           {/* 4. Price */}
           <motion.div variants={itemVariants} className="flex items-baseline">
             <span className="text-2xl font-semibold">
-              ${product.price.toLocaleString()}
+              ₹{product.price.toLocaleString('en-IN')}
             </span>
             {product.originalPrice && discountPercent > 0 && (
               <>
                 <span className="text-lg text-muted-foreground line-through ml-2">
-                  ${product.originalPrice.toLocaleString()}
+                  ₹{product.originalPrice.toLocaleString('en-IN')}
                 </span>
                 <span className="text-sm text-gold font-medium ml-2">
                   Save {discountPercent}%

@@ -293,7 +293,7 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                             </p>
 
                             <p className="text-sm font-semibold mt-1 text-foreground">
-                              ${item.price.toLocaleString()}
+                              ₹{item.price.toLocaleString('en-IN')}
                             </p>
 
                             <button

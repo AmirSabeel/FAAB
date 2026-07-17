@@ -36,7 +36,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     {
       id: 'demo-silk-blazer',
       name: 'Silk Blend Blazer',
-      price: 489,
+      price: 40587,
       image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=530&fit=crop&q=80',
       size: 'M',
       quantity: 1,
@@ -44,7 +44,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     {
       id: 'demo-cashmere-sweater',
       name: 'Cashmere Sweater',
-      price: 329,
+      price: 27307,
       image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=530&fit=crop&q=80',
       color: 'Ivory',
       quantity: 1,
@@ -94,9 +94,9 @@ interface CartDrawerProps {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
