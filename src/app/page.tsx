@@ -105,7 +105,7 @@ export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
       <PageLoader />
-      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} />
+      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} onAdminClick={() => setIsAdmin(true)} />
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <MobileNavDrawer isOpen={isOpen} onClose={close} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
@@ -131,18 +131,6 @@ export default function Home() {
             )}
           </AnimatePresence>
         </motion.button>
-      )}
-
-      {/* Admin Toggle Button */}
-      {mounted && (
-        <button
-          onClick={() => setIsAdmin(true)}
-          aria-label="Open admin panel"
-          className="fixed bottom-4 left-4 z-50 w-10 h-10 rounded-full bg-card border border-border shadow-luxury flex items-center justify-center hover:shadow-luxury-lg transition-all md:bottom-8"
-          title="Admin Panel"
-        >
-          <svg className="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        </button>
       )}
 
       <main className="min-h-screen">
