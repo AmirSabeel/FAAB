@@ -11,6 +11,8 @@ const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
 interface NavbarProps {
   onMenuClick?: () => void
   onSearchClick?: () => void
+  onWishlistClick?: () => void
+  onCartClick?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -23,7 +25,7 @@ function useHydrated() {
   )
 }
 
-export function Navbar({ onMenuClick, onSearchClick }: NavbarProps) {
+export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
@@ -129,11 +131,23 @@ export function Navbar({ onMenuClick, onSearchClick }: NavbarProps) {
           </button>
 
           {/* Wishlist */}
-          <ActionButton icon={<Heart className="w-[18px] h-[18px]" />} label="Wishlist" />
+          <button
+            onClick={onWishlistClick}
+            className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
+            aria-label="Wishlist"
+          >
+            <Heart className="w-[18px] h-[18px]" />
+          </button>
 
           {/* Cart with Badge */}
           <div className="relative">
-            <ActionButton icon={<ShoppingBag className="w-[18px] h-[18px]" />} label="Cart" />
+            <button
+              onClick={onCartClick}
+              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
+              aria-label="Cart"
+            >
+              <ShoppingBag className="w-[18px] h-[18px]" />
+            </button>
             <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 min-w-[18px] rounded-full gradient-gold text-[10px] font-semibold text-white leading-none">
               3
             </span>

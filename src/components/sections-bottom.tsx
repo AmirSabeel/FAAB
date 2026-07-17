@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useMotionValue, useSpring } from 'framer-motion';
 import {
   ArrowRight,
   Quote,
@@ -129,6 +129,24 @@ function SectionHeading({
    ================================================================ */
 
 export function PromoBanner() {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 150, damping: 15 });
+  const springY = useSpring(y, { stiffness: 150, damping: 15 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set((e.clientX - centerX) * 0.15);
+    y.set((e.clientY - centerY) * 0.15);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
   return (
     <section className="relative w-full bg-foreground text-background dark:bg-background dark:text-foreground overflow-hidden">
       {/* Diagonal stripe pattern overlay */}
@@ -167,15 +185,22 @@ export function PromoBanner() {
             Discover curated pieces at exceptional prices. Elevate your
             wardrobe with our most anticipated sale of the season.
           </p>
-          <motion.a
-            href="#"
-            className="inline-flex items-center gap-2 mt-8 px-8 py-3.5 rounded-full bg-gold text-white hover:bg-gold-dark font-medium transition-colors btn-ripple"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
+          <motion.div
+            style={{ x: springX, y: springY }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="inline-block"
           >
-            Shop the Sale
-            <ArrowRight className="w-4 h-4" />
-          </motion.a>
+            <motion.a
+              href="#"
+              className="inline-flex items-center gap-2 mt-8 px-8 py-3.5 rounded-full bg-gold text-white hover:bg-gold-dark font-medium transition-colors btn-ripple"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Shop the Sale
+              <ArrowRight className="w-4 h-4" />
+            </motion.a>
+          </motion.div>
         </ScrollReveal>
       </div>
 

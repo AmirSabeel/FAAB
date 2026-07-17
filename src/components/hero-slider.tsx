@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -118,10 +118,18 @@ const glassCardVariants = {
 export default function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const [heroHeight, setHeroHeight] = useState(0)
 
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)
-  const containerRef = useRef<HTMLElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
+
+  const { scrollY } = useScroll()
+  const imageY = useTransform(scrollY, [0, heroHeight], [0, heroHeight * 0.3])
+
+  useEffect(() => {
+    if (heroRef.current) setHeroHeight(heroRef.current.offsetHeight)
+  }, [])
 
   const totalSlides = slides.length
   const slide = slides[currentSlide]
@@ -184,7 +192,7 @@ export default function HeroSlider() {
 
   return (
     <section
-      ref={containerRef}
+      ref={heroRef}
       className="relative w-full h-[85vh] md:h-screen overflow-hidden bg-black"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -197,13 +205,14 @@ export default function HeroSlider() {
     >
       {/* ── Background Images ─────────────────────────────────────────────── */}
       {slides.map((s, index) => (
-        <div
+        <motion.div
           key={s.id}
           className={cn(
             'absolute inset-0 transition-opacity duration-1000 ease-in-out',
             index === currentSlide ? 'opacity-100 z-0' : 'opacity-0 z-[-1]'
           )}
           aria-hidden={index !== currentSlide}
+          style={{ y: imageY, willChange: 'transform' }}
         >
           <img
             src={s.image}
@@ -213,7 +222,7 @@ export default function HeroSlider() {
             style={{ willChange: 'opacity, transform' }}
             aria-hidden="true"
           />
-        </div>
+        </motion.div>
       ))}
 
       {/* ── Gradient Overlay ─────────────────────────────────────────────── */}

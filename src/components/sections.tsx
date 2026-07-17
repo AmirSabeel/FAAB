@@ -203,13 +203,21 @@ export function FeaturedCollections() {
                 transition={{ duration: 0.4, ease: 'easeOut' }}
                 className="relative rounded-3xl overflow-hidden group cursor-pointer h-[400px] md:h-[500px]"
               >
-                <Image
-                  src={col.image}
-                  alt={col.name}
-                  fill
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
+                <motion.div
+                  initial={{ scale: 1.1, opacity: 0.8 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={{ once: true, margin: '-100px' }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={col.image}
+                    alt={col.name}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                </motion.div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                 <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
