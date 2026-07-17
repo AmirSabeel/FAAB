@@ -10,6 +10,7 @@ const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
 
 interface NavbarProps {
   onMenuClick?: () => void
+  onSearchClick?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -22,7 +23,7 @@ function useHydrated() {
   )
 }
 
-export function Navbar({ onMenuClick }: NavbarProps) {
+export function Navbar({ onMenuClick, onSearchClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
@@ -119,7 +120,13 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           </AnimatePresence>
 
           {/* Search */}
-          <ActionButton icon={<Search className="w-[18px] h-[18px]" />} label="Search" />
+          <button
+            onClick={onSearchClick}
+            className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
+            aria-label="Search"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
 
           {/* Wishlist */}
           <ActionButton icon={<Heart className="w-[18px] h-[18px]" />} label="Wishlist" />

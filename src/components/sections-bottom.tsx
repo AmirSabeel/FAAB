@@ -12,7 +12,7 @@ import {
   Instagram,
   Twitter,
   Facebook,
-  Pinterest,
+  Bookmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -558,7 +558,7 @@ const socialIcons = [
   { icon: Instagram, label: 'Instagram' },
   { icon: Twitter, label: 'Twitter' },
   { icon: Facebook, label: 'Facebook' },
-  { icon: Pinterest, label: 'Pinterest' },
+  { icon: Bookmark, label: 'Pinterest' },
 ];
 
 export function Footer() {
