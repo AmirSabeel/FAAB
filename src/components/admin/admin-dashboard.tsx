@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
+import { useAdminStore } from './admin-store'
 
 const kpiConfigs = [
   { key: 'totalRevenue', label: 'Total Revenue', icon: DollarSign, format: (v: number) => `$${v.toLocaleString()}`, subtitle: '+12% from last month' },
@@ -289,12 +289,12 @@ export function AdminDashboard() {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Recent Orders</h2>
-              <Link
-                href="/?tab=orders"
-                className="text-xs text-gold hover:text-gold-dark transition-colors flex items-center gap-1 font-medium"
+              <button
+                onClick={() => useAdminStore.getState().setActiveTab('orders')}
+                className="text-xs text-gold hover:text-gold-dark transition-colors flex items-center gap-1 font-medium cursor-pointer"
               >
                 View All <ArrowUpRight className="w-3 h-3" />
-              </Link>
+              </button>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {data.recentOrders.map((order) => (

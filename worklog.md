@@ -35,3 +35,32 @@ Stage Summary:
 - Recharts-powered analytics with donut and bar charts
 - Smooth animated transitions between store and admin views
 - Note: Dev server (Turbopack) has stability issues in this environment — `next build` confirms all code compiles correctly
+
+---
+Task ID: 29
+Agent: Main
+Task: Fix critical admin toggle bug, seed database, browser-verify admin panel
+
+Work Log:
+- Diagnosed critical bug: `useAdmin()` context hook was called outside `AdminContext.Provider`, making the admin toggle button a no-op
+- Created `admin-store.ts` — Zustand store replacing React Context for admin state (isAdmin, activeTab, sidebarCollapsed)
+- Updated `admin-layout.tsx` to use Zustand selectors instead of Context provider
+- Updated `admin-dashboard.tsx` to use store's `setActiveTab` instead of broken `Link` href for "View All" navigation
+- Updated `page.tsx` to import `useAdminStore` instead of the old `useAdmin` context hook
+- Reset SQLite database (removed stale data), pushed Prisma schema, regenerated client
+- Ran seed script: 12 products, 15 customers, 25 orders successfully created
+- ESLint passes with zero errors/warnings
+- Browser verification (agent-browser) confirmed all 5 admin sections work:
+  - Dashboard: KPI cards with live data ($22,980.24 revenue, 25 orders, 15 customers, 12 products), revenue chart, recent orders, top products, status breakdown
+  - Products: 12 products displayed with images, search, category/status filters, Add Product modal (all fields), pagination
+  - Orders: 25 orders with status filter tabs (All/Pending/Processing/Shipped/Delivered/Cancelled), expandable detail cards, status change actions
+  - Customers: 15 customers in responsive table with avatars, search, pagination
+  - Analytics: Pie chart (sales by category), bar chart (orders over time), customer growth stats
+- "Back to Store" link correctly returns to the MAISON storefront
+- All API calls return 200 OK, zero runtime errors in dev.log
+
+Stage Summary:
+- Admin panel is fully functional and browser-verified
+- Root cause (Context outside Provider) fixed with Zustand store pattern
+- Database seeded with realistic demo data
+- All 5 admin sections render real data from SQLite via Prisma

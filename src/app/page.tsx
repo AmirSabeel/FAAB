@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AdminLayout, AdminSidebar, useAdmin } from '@/components/admin/admin-layout'
+import { AdminLayout } from '@/components/admin/admin-layout'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
 import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminCustomers } from '@/components/admin/admin-customers'
 import { AdminAnalytics } from '@/components/admin/admin-analytics'
+import { useAdminStore } from '@/components/admin/admin-store'
 import { Navbar } from '@/components/navbar'
 import { useMobileNav, MobileNavDrawer, BottomNavBar } from '@/components/mobile-nav'
 import HeroSlider from '@/components/hero-slider'
@@ -33,7 +34,9 @@ function useHydrated() {
 }
 
 export default function Home() {
-  const { isAdmin, setIsAdmin, activeTab, sidebarCollapsed } = useAdmin()
+  const isAdmin = useAdminStore((s) => s.isAdmin)
+  const setIsAdmin = useAdminStore((s) => s.setIsAdmin)
+  const activeTab = useAdminStore((s) => s.activeTab)
   const [searchOpen, setSearchOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [wishlistOpen, setWishlistOpen] = useState(false)
