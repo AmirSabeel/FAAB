@@ -12,6 +12,7 @@ import {
   X,
   Sun,
   Moon,
+  LayoutGrid,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,7 @@ const DRAWER_LINKS = [
   { label: 'Men', href: '#' },
   { label: 'Collections', href: '#' },
   { label: 'Sale', href: '#' },
+  { label: 'Admin Panel', href: '#', icon: LayoutGrid, isAdmin: true },
 ] as const
 
 const BOTTOM_NAV_ITEMS = [
@@ -56,9 +58,10 @@ const BOTTOM_NAV_ITEMS = [
 interface MobileNavDrawerProps {
   isOpen: boolean
   onClose: () => void
+  onAdminClick?: () => void
 }
 
-export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
+export function MobileNavDrawer({ isOpen, onClose, onAdminClick }: MobileNavDrawerProps) {
   const { theme, setTheme } = useTheme()
 
   // Lock body scroll when drawer is open
@@ -134,29 +137,45 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
               {/* Nav Links */}
               <nav className="flex-1 px-4">
                 <div className="flex flex-col gap-1">
-                  {DRAWER_LINKS.map((link, i) => (
-                    <motion.a
-                      key={link.label}
-                      href={link.href}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{
-                        duration: 0.35,
-                        delay: 0.1 + i * 0.05,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      className={cn(
-                        'flex items-center min-h-12 px-4 rounded-2xl',
-                        'text-base font-medium tracking-wide',
-                        'text-foreground/80 hover:text-foreground',
-                        'hover:bg-foreground/[0.04] active:bg-foreground/[0.06]',
-                        'transition-colors duration-200'
-                      )}
-                    >
-                      {link.label}
-                    </motion.a>
-                  ))}
+                  {DRAWER_LINKS.map((link, i) => {
+                    const isLast = i === DRAWER_LINKS.length - 1
+                    const isAdminItem = 'isAdmin' in link && link.isAdmin
+
+                    return (
+                      <motion.button
+                        key={link.label}
+                        type="button"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.35,
+                          delay: 0.1 + i * 0.05,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          if (isAdminItem) {
+                            onClose()
+                            onAdminClick?.()
+                          }
+                        }}
+                        className={cn(
+                          'flex items-center gap-3 min-h-12 px-4 rounded-2xl w-full text-left',
+                          isLast && 'mt-3 pt-3 border-t border-border/30',
+                          isAdminItem
+                            ? 'text-sm font-medium tracking-wide text-muted-foreground hover:text-foreground'
+                            : 'text-base font-medium tracking-wide text-foreground/80 hover:text-foreground',
+                          'hover:bg-foreground/[0.04] active:bg-foreground/[0.06]',
+                          'transition-colors duration-200'
+                        )}
+                      >
+                        {isAdminItem && link.icon && (
+                          <link.icon className="w-4 h-4" />
+                        )}
+                        {link.label}
+                      </motion.button>
+                    )
+                  })}
                 </div>
               </nav>
 

@@ -105,9 +105,9 @@ export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
       <PageLoader />
-      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} onAdminClick={() => setIsAdmin(true)} />
+      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} />
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      <MobileNavDrawer isOpen={isOpen} onClose={close} />
+      <MobileNavDrawer isOpen={isOpen} onClose={close} onAdminClick={() => setIsAdmin(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <WishlistDrawer isOpen={wishlistOpen} onClose={() => setWishlistOpen(false)} />
       <QuickViewModal isOpen={quickViewOpen} onClose={() => { setQuickViewOpen(false); setQuickViewProduct(null) }} product={quickViewProduct} />

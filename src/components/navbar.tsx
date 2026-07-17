@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Search, Heart, ShoppingBag, Menu, LayoutGrid } from 'lucide-react'
+import { Sun, Moon, Search, Heart, ShoppingBag, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
@@ -13,7 +13,6 @@ interface NavbarProps {
   onSearchClick?: () => void
   onWishlistClick?: () => void
   onCartClick?: () => void
-  onAdminClick?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -26,7 +25,7 @@ function useHydrated() {
   )
 }
 
-export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick, onAdminClick }: NavbarProps) {
+export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
@@ -100,21 +99,6 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
           transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="flex items-center gap-0.5 sm:gap-1"
         >
-          {/* Admin Panel */}
-          {mounted && (
-            <motion.button
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              onClick={onAdminClick}
-              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
-              aria-label="Open admin panel"
-              title="Admin Panel"
-            >
-              <LayoutGrid className="w-[18px] h-[18px]" />
-            </motion.button>
-          )}
-
           {/* Theme Toggle */}
           <AnimatePresence mode="wait">
             {mounted && (
