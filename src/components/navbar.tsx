@@ -80,7 +80,7 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
               href="/"
               className="tracking-[0.3em] font-semibold text-lg uppercase select-none"
             >
-              MAISON
+              FAAB
             </a>
           </motion.div>
         </div>

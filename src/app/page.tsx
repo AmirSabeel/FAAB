@@ -59,7 +59,7 @@ export default function Home() {
   // Welcome toast
   useEffect(() => {
     const timer = setTimeout(() => {
-      toast('Welcome to MAISON', { description: 'Discover our latest collections curated for you.', duration: 4000 })
+      toast('Welcome to FAAB', { description: 'Discover our latest collections curated for you.', duration: 4000 })
     }, 3000)
     return () => clearTimeout(timer)
   }, [])

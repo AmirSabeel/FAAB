@@ -129,7 +129,7 @@ function SidebarContent({
                 collapsed ? "text-base" : ""
               )}
             >
-              {collapsed ? "M" : "MAISON"}
+              {collapsed ? "M" : "FAAB"}
             </span>
             {!collapsed && (
               <span className="text-[10px] text-muted-foreground tracking-[0.2em] ml-1">

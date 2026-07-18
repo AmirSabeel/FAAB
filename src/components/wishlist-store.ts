@@ -60,7 +60,7 @@ export const useWishlistStore = create<WishlistStore>()(
       },
     }),
     {
-      name: 'maison-wishlist',
+      name: 'faab-wishlist',
       partialize: (state) => ({ items: state.items }),
     }
   )

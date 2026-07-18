@@ -163,10 +163,10 @@ export function PromoBanner() {
         }}
       />
 
-      {/* MAISON watermark */}
+      {/* FAAB watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
         <span className="text-[10vw] md:text-[14vw] font-bold tracking-[0.2em] opacity-[0.04] leading-none uppercase">
-          MAISON
+          FAAB
         </span>
       </div>
 
@@ -219,7 +219,7 @@ const reviews = [
     name: 'Sarah Mitchell',
     title: 'Fashion Stylist',
     initials: 'SM',
-    text: 'MAISON has completely transformed my wardrobe. The quality of each piece is exceptional, and the curation is impeccable.',
+    text: 'FAAB has completely transformed my wardrobe. The quality of each piece is exceptional, and the curation is impeccable.',
   },
   {
     name: 'James Chen',
@@ -231,19 +231,19 @@ const reviews = [
     name: 'Emma Rodriguez',
     title: 'Interior Designer',
     initials: 'ER',
-    text: 'Not just fashion — MAISON represents a lifestyle. Their aesthetic perfectly aligns with modern luxury living.',
+    text: 'Not just fashion — FAAB represents a lifestyle. Their aesthetic perfectly aligns with modern luxury living.',
   },
   {
     name: 'David Kim',
     title: 'Entrepreneur',
     initials: 'DK',
-    text: 'From the website experience to the packaging, everything about MAISON screams sophistication. Absolutely love it.',
+    text: 'From the website experience to the packaging, everything about FAAB screams sophistication. Absolutely love it.',
   },
   {
     name: 'Olivia Thompson',
     title: 'Model',
     initials: 'OT',
-    text: 'The fabrics, the fit, the finish — everything is on another level. MAISON is my go-to for premium fashion.',
+    text: 'The fabrics, the fit, the finish — everything is on another level. FAAB is my go-to for premium fashion.',
   },
 ];
 
@@ -376,7 +376,7 @@ export function FeaturesSection() {
     <section className="py-16 md:py-24 px-6">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
-          title="The MAISON Experience"
+          title="The FAAB Experience"
           subtitle="Why discerning customers choose us"
         />
 
@@ -594,7 +594,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <span className="inline-block tracking-[0.3em] uppercase font-semibold text-lg">
-              MAISON
+              FAAB
             </span>
             <p className="text-foreground/60 dark:text-foreground/50 text-sm mt-3 max-w-xs">
               Redefining luxury fashion for the modern connoisseur.
@@ -675,7 +675,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-foreground/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-foreground/40">
-          <span>&copy; 2026 MAISON. All rights reserved.</span>
+          <span>&copy; 2026 FAAB. All rights reserved.</span>
           <div className="flex gap-3">
             <a
               href="#"

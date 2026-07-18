@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-const letters = 'MAISON'.split('');
+const letters = 'FAAB'.split('');
 
 const letterVariants = {
   hidden: { opacity: 0, y: 20 },

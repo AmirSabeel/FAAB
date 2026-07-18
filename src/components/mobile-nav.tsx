@@ -122,7 +122,7 @@ export function MobileNavDrawer({ isOpen, onClose, onAdminClick }: MobileNavDraw
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search MAISON..."
+                    placeholder="Search FAAB..."
                     className={cn(
                       'w-full h-12 pl-11 pr-4 rounded-2xl',
                       'bg-muted/60 border border-border/50 text-sm',

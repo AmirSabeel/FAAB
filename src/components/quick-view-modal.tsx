@@ -226,7 +226,7 @@ function QuickViewPanel({
             variants={itemVariants}
             className="text-xs text-gold font-medium tracking-[0.2em] uppercase"
           >
-            Maison Exclusive
+            FAAB Exclusive
           </motion.p>
 
           {/* 2. Product Name */}
@@ -274,7 +274,7 @@ function QuickViewPanel({
             className="text-sm text-muted-foreground leading-relaxed"
           >
             {product.description ||
-              'Meticulously crafted with premium materials and exceptional attention to detail. This piece embodies the timeless elegance and refined sophistication that defines the MAISON collection, designed for those who appreciate the finer things.'}
+              'Meticulously crafted with premium materials and exceptional attention to detail. This piece embodies the timeless elegance and refined sophistication that defines the FAAB collection, designed for those who appreciate the finer things.'}
           </motion.p>
 
           {/* 6. Color Selection */}

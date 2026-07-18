@@ -17,32 +17,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MAISON — Premium Luxury Fashion & Lifestyle",
+  title: "FAAB — Premium Luxury Fashion & Lifestyle",
   description:
-    "Discover curated collections of premium fashion, accessories, and lifestyle products. Experience luxury redefined with MAISON's exclusive selection.",
+    "Discover curated collections of premium fashion, accessories, and lifestyle products. Experience luxury redefined with FAAB's exclusive selection.",
   keywords: [
     "luxury fashion",
     "premium lifestyle",
     "designer clothing",
     "exclusive collections",
-    "MAISON",
+    "FAAB",
     "high-end fashion",
     "premium accessories",
   ],
-  authors: [{ name: "MAISON" }],
+  authors: [{ name: "FAAB" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
   openGraph: {
-    title: "MAISON — Premium Luxury Fashion & Lifestyle",
+    title: "FAAB — Premium Luxury Fashion & Lifestyle",
     description:
       "Discover curated collections of premium fashion, accessories, and lifestyle products.",
     type: "website",
-    siteName: "MAISON",
+    siteName: "FAAB",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MAISON — Premium Luxury Fashion",
+    title: "FAAB — Premium Luxury Fashion",
     description:
       "Curated collections of premium fashion, accessories, and lifestyle products.",
   },
