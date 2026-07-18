@@ -1,0 +1,708 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     5→import {
+     6→  Search,
+     7→  Plus,
+     8→  Pencil,
+     9→  Trash2,
+    10→  GripVertical,
+    11→  TrendingUp,
+    12→  X,
+    13→  Eye,
+    14→  ArrowUpDown,
+    15→  Image as ImageIconLucide,
+    16→} from 'lucide-react'
+    17→import { motion, Reorder } from 'framer-motion'
+    18→import { Skeleton } from '@/components/ui/skeleton'
+    19→import { Input } from '@/components/ui/input'
+    20→import { Label } from '@/components/ui/label'
+    21→import { Textarea } from '@/components/ui/textarea'
+    22→import {
+    23→  Dialog,
+    24→  DialogContent,
+    25→  DialogHeader,
+    26→  DialogTitle,
+    27→} from '@/components/ui/dialog'
+    28→import {
+    29→  AlertDialog,
+    30→  AlertDialogAction,
+    31→  AlertDialogCancel,
+    32→  AlertDialogContent,
+    33→  AlertDialogDescription,
+    34→  AlertDialogFooter,
+    35→  AlertDialogHeader,
+    36→  AlertDialogTitle,
+    37→} from '@/components/ui/alert-dialog'
+    38→import { cn } from '@/lib/utils'
+    39→import { toast } from 'sonner'
+    40→
+    41→interface TrendingProduct {
+    42→  id: string
+    43→  name: string
+    44→  description: string | null
+    45→  price: number
+    46→  originalPrice: number | null
+    47→  image: string
+    48→  category: string
+    49→  rating: number
+    50→  reviewCount: number
+    51→  stock: number
+    52→  status: string
+    53→  isFeatured: boolean
+    54→  isNew: boolean
+    55→  isTrending: boolean
+    56→  trendingOrder: number
+    57→  createdAt: string
+    58→}
+    59→
+    60→interface AllProduct {
+    61→  id: string
+    62→  name: string
+    63→  price: number
+    64→  originalPrice: number | null
+    65→  image: string
+    66→  category: string
+    67→  isTrending: boolean
+    68→  rating: number
+    69→  reviewCount: number
+    70→}
+    71→
+    72→/* ─── Skeleton ─────────────────────────────────────────── */
+    73→function GridSkeleton() {
+    74→  return (
+    75→    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    76→      {Array.from({ length: 8 }).map((_, i) => (
+    77→        <div key={i} className="bg-card rounded-2xl border border-border/50 overflow-hidden">
+    78→          <Skeleton className="aspect-[4/3] w-full" />
+    79→          <div className="p-4 space-y-2">
+    80→            <Skeleton className="h-4 w-3/4" />
+    81→            <Skeleton className="h-3 w-1/2" />
+    82→            <Skeleton className="h-5 w-1/3" />
+    83→          </div>
+    84→        </div>
+    85→      ))}
+    86→    </div>
+    87→  )
+    88→}
+    89→
+    90→/* ─── Edit Modal ──────────────────────────────────────── */
+    91→interface EditForm {
+    92→  name: string
+    93→  description: string
+    94→  price: string
+    95→  originalPrice: string
+    96→  image: string
+    97→  category: string
+    98→  rating: string
+    99→  reviewCount: string
+   100→}
+   101→
+   102→const CATEGORIES = [
+   103→  "Women's Fashion",
+   104→  "Men's Fashion",
+   105→  'Accessories',
+   106→  'Footwear',
+   107→  'Jewelry',
+   108→  'Watches',
+   109→]
+   110→
+   111→export function AdminTrending() {
+   112→  const queryClient = useQueryClient()
+   113→
+   114→  // Fetch trending products
+   115→  const { data: trendingProducts = [], isLoading } = useQuery<TrendingProduct[]>({
+   116→    queryKey: ['admin-trending'],
+   117→    queryFn: () => fetch('/api/admin/trending').then((r) => r.json()),
+   118→  })
+   119→
+   120→  // Edit modal
+   121→  const [editingProduct, setEditingProduct] = useState<TrendingProduct | null>(null)
+   122→  const [editForm, setEditForm] = useState<EditForm>({
+   123→    name: '', description: '', price: '', originalPrice: '', image: '', category: '', rating: '', reviewCount: '',
+   124→  })
+   125→  const [editSaving, setEditSaving] = useState(false)
+   126→
+   127→  // Delete dialog
+   128→  const [deleteTarget, setDeleteTarget] = useState<TrendingProduct | null>(null)
+   129→  const [deleting, setDeleting] = useState(false)
+   130→
+   131→  // Add from catalog modal
+   132→  const [addModalOpen, setAddModalOpen] = useState(false)
+   133→  const [catalogSearch, setCatalogSearch] = useState('')
+   134→  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState('')
+   135→
+   136→  useEffect(() => {
+   137→    const timer = setTimeout(() => setDebouncedCatalogSearch(catalogSearch), 300)
+   138→    return () => clearTimeout(timer)
+   139→  }, [catalogSearch])
+   140→
+   141→  // Fetch non-trending products for "Add" modal
+   142→  const { data: catalogProducts = [], isLoading: catalogLoading } = useQuery<AllProduct[]>({
+   143→    queryKey: ['admin-catalog-products', debouncedCatalogSearch],
+   144→    queryFn: () =>
+   145→      fetch(
+   146→        `/api/admin/products?limit=50&status=active&search=${encodeURIComponent(debouncedCatalogSearch)}`
+   147→      )
+   148→        .then((r) => r.json())
+   149→        .then((data) => data.products || []),
+   150→    enabled: addModalOpen,
+   151→  })
+   152→
+   153→  // Reorder mutation
+   154→  const reorderMutation = useMutation({
+   155→    mutationFn: async (products: Array<{ id: string; trendingOrder: number }>) => {
+   156→      const res = await fetch('/api/admin/trending', {
+   157→        method: 'PUT',
+   158→        headers: { 'Content-Type': 'application/json' },
+   159→        body: JSON.stringify({ products }),
+   160→      })
+   161→      if (!res.ok) throw new Error('Failed to reorder')
+   162→      return res.json()
+   163→    },
+   164→    onSuccess: () => {
+   165→      queryClient.invalidateQueries({ queryKey: ['admin-trending'] })
+   166→      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
+   167→    },
+   168→  })
+   169→
+   170→  // Edit (update product fields) mutation
+   171→  const editMutation = useMutation({
+   172→    mutationFn: async (body: Record<string, unknown>) => {
+   173→      const res = await fetch('/api/admin/products', {
+   174→        method: 'PUT',
+   175→        headers: { 'Content-Type': 'application/json' },
+   176→        body: JSON.stringify(body),
+   177→      })
+   178→      if (!res.ok) throw new Error('Failed to update')
+   179→      return res.json()
+   180→    },
+   181→    onSuccess: () => {
+   182→      queryClient.invalidateQueries({ queryKey: ['admin-trending'] })
+   183→      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+   184→      toast.success('Product updated successfully')
+   185→      setEditingProduct(null)
+   186→    },
+   187→    onError: () => toast.error('Failed to update product'),
+   188→  })
+   189→
+   190→  // Delete (remove from trending) mutation
+   191→  const deleteMutation = useMutation({
+   192→    mutationFn: async (id: string) => {
+   193→      const res = await fetch(`/api/admin/trending?id=${id}`, { method: 'DELETE' })
+   194→      if (!res.ok) throw new Error('Failed to remove')
+   195→      return res.json()
+   196→    },
+   197→    onSuccess: () => {
+   198→      queryClient.invalidateQueries({ queryKey: ['admin-trending'] })
+   199→      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
+   200→      toast.success('Removed from trending')
+   201→      setDeleteTarget(null)
+   202→    },
+   203→    onError: () => toast.error('Failed to remove from trending'),
+   204→  })
+   205→
+   206→  // Add to trending mutation
+   207→  const addToTrendingMutation = useMutation({
+   208→    mutationFn: async (id: string) => {
+   209→      const res = await fetch('/api/admin/trending', {
+   210→        method: 'PATCH',
+   211→        headers: { 'Content-Type': 'application/json' },
+   212→        body: JSON.stringify({ id, isTrending: true }),
+   213→      })
+   214→      if (!res.ok) throw new Error('Failed to add')
+   215→      return res.json()
+   216→    },
+   217→    onSuccess: () => {
+   218→      queryClient.invalidateQueries({ queryKey: ['admin-trending'] })
+   219→      queryClient.invalidateQueries({ queryKey: ['admin-catalog-products'] })
+   220→      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
+   221→      toast.success('Added to trending')
+   222→    },
+   223→    onError: () => toast.error('Failed to add to trending'),
+   224→  })
+   225→
+   226→  // Image preview helper
+   227→  const [imgPreview, setImgPreview] = useState<string | null>(null)
+   228→
+   229→  // Drag reorder handler
+   230→  const handleReorder = useCallback(
+   231→    (reordered: TrendingProduct[]) => {
+   232→      const items = reordered.map((p, idx) => ({ id: p.id, trendingOrder: idx }))
+   233→      reorderMutation.mutate(items)
+   234→    },
+   235→    [reorderMutation]
+   236→  )
+   237→
+   238→  // Open edit modal
+   239→  function openEditModal(product: TrendingProduct) {
+   240→    setEditingProduct(product)
+   241→    setEditForm({
+   242→      name: product.name,
+   243→      description: product.description || '',
+   244→      price: String(product.price),
+   245→      originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+   246→      image: product.image,
+   247→      category: product.category,
+   248→      rating: String(product.rating),
+   249→      reviewCount: String(product.reviewCount),
+   250→    })
+   251→  }
+   252→
+   253→  async function handleEditSave() {
+   254→    if (!editingProduct || !editForm.name.trim() || !editForm.price) {
+   255→      toast.error('Name and price are required')
+   256→      return
+   257→    }
+   258→    setEditSaving(true)
+   259→    await editMutation.mutateAsync({
+   260→      id: editingProduct.id,
+   261→      name: editForm.name.trim(),
+   262→      description: editForm.description.trim() || null,
+   263→      price: parseFloat(editForm.price),
+   264→      originalPrice: editForm.originalPrice ? parseFloat(editForm.originalPrice) : null,
+   265→      image: editForm.image.trim() || editingProduct.image,
+   266→      category: editForm.category,
+   267→      rating: parseFloat(editForm.rating) || 4.5,
+   268→      reviewCount: parseInt(editForm.reviewCount) || 0,
+   269→    })
+   270→    setEditSaving(false)
+   271→  }
+   272→
+   273→  async function handleDelete() {
+   274→    if (!deleteTarget) return
+   275→    setDeleting(true)
+   276→    await deleteMutation.mutateAsync(deleteTarget.id)
+   277→    setDeleting(false)
+   278→  }
+   279→
+   280→  function handleAddFromCatalog(product: AllProduct) {
+   281→    addToTrendingMutation.mutate(product.id)
+   282→  }
+   283→
+   284→  const nonTrendingCatalog = catalogProducts.filter((p) => !p.isTrending)
+   285→
+   286→  return (
+   287→    <div>
+   288→      {/* Top Bar */}
+   289→      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+   290→        <div>
+   291→          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+   292→            <TrendingUp className="w-6 h-6 text-gold" />
+   293→            Trending Now
+   294→          </h1>
+   295→          <p className="text-sm text-muted-foreground mt-1">
+   296→            {trendingProducts.length} product{trendingProducts.length !== 1 ? 's' : ''} in trending section
+   297→          </p>
+   298→        </div>
+   299→        <button
+   300→          onClick={() => setAddModalOpen(true)}
+   301→          className="h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 shrink-0 cursor-pointer"
+   302→        >
+   303→          <Plus className="w-4 h-4" />
+   304→          Add Products
+   305→        </button>
+   306→      </div>
+   307→
+   308→      {/* Reorder Hint */}
+   309→      {trendingProducts.length > 0 && (
+   310→        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4 bg-muted/40 rounded-xl px-4 py-2.5 border border-border/30">
+   311→          <ArrowUpDown className="w-3.5 h-3.5 shrink-0" />
+   312→          <span>Drag and drop to reorder products. Changes are saved automatically.</span>
+   313→        </div>
+   314→      )}
+   315→
+   316→      {/* Trending Grid */}
+   317→      {isLoading ? (
+   318→        <GridSkeleton />
+   319→      ) : trendingProducts.length === 0 ? (
+   320→        <div className="flex flex-col items-center justify-center py-24 text-center">
+   321→          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+   322→            <TrendingUp className="w-10 h-10 text-muted-foreground/40" />
+   323→          </div>
+   324→          <h3 className="text-lg font-medium mb-1">No trending products yet</h3>
+   325→          <p className="text-sm text-muted-foreground max-w-sm">
+   326→            Add products from your catalog to feature them in the &quot;Trending Now&quot; section on the homepage.
+   327→          </p>
+   328→          <button
+   329→            onClick={() => setAddModalOpen(true)}
+   330→            className="mt-6 h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 cursor-pointer"
+   331→          >
+   332→            <Plus className="w-4 h-4" />
+   333→            Add Products
+   334→          </button>
+   335→        </div>
+   336→      ) : (
+   337→        <Reorder.Group
+   338→          axis="y"
+   339→          values={trendingProducts}
+   340→          onReorder={handleReorder}
+   341→          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+   342→          layoutScroll
+   343→        >
+   344→          {trendingProducts.map((product, idx) => (
+   345→            <Reorder.Item
+   346→              key={product.id}
+   347→              value={product}
+   348→              className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-luxury-sm hover:shadow-luxury transition-shadow group"
+   349→              whileDrag={{ scale: 1.03, boxShadow: '0 20px 40px rgba(0,0,0,0.15)', zIndex: 50 }}
+   350→            >
+   351→              <div className="aspect-[4/3] overflow-hidden relative">
+   352→                <img
+   353→                  src={product.image}
+   354→                  alt={product.name}
+   355→                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+   356→                />
+   357→
+   358→                {/* Drag Handle + Order Badge */}
+   359→                <div className="absolute top-3 left-3 flex items-center gap-2">
+   360→                  <div className="w-7 h-7 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing">
+   361→                    <GripVertical className="w-3.5 h-3.5 text-white" />
+   362→                  </div>
+   363→                  <span className="text-[11px] font-bold text-white bg-gold/90 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+   364→                    #{idx + 1}
+   365→                  </span>
+   366→                </div>
+   367→
+   368→                {/* Action Buttons */}
+   369→                <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+   370→                  <button
+   371→                    onClick={() => setImgPreview(product.image)}
+   372→                    className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   373→                    title="Preview image"
+   374→                  >
+   375→                    <Eye className="w-3.5 h-3.5" />
+   376→                  </button>
+   377→                  <button
+   378→                    onClick={() => openEditModal(product)}
+   379→                    className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   380→                    title="Edit product"
+   381→                  >
+   382→                    <Pencil className="w-3.5 h-3.5" />
+   383→                  </button>
+   384→                  <button
+   385→                    onClick={() => setDeleteTarget(product)}
+   386→                    className="w-8 h-8 rounded-lg bg-red-500/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-600 transition-colors cursor-pointer"
+   387→                    title="Remove from trending"
+   388→                  >
+   389→                    <Trash2 className="w-3.5 h-3.5" />
+   390→                  </button>
+   391→                </div>
+   392→
+   393→                {/* Badges */}
+   394→                {product.isNew && (
+   395→                  <span className="absolute bottom-3 left-3 bg-black text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">
+   396→                    NEW
+   397→                  </span>
+   398→                )}
+   399→              </div>
+   400→
+   401→              <div className="p-4 space-y-2">
+   402→                <div className="flex items-start justify-between gap-2">
+   403→                  <h3 className="text-sm font-medium line-clamp-1 flex-1">{product.name}</h3>
+   404→                </div>
+   405→                <p className="text-xs text-muted-foreground">{product.category}</p>
+   406→                <div className="flex items-center gap-2">
+   407→                  <span className="text-base font-semibold">
+   408→                    ₹{product.price.toLocaleString('en-IN')}
+   409→                  </span>
+   410→                  {product.originalPrice && product.originalPrice > product.price && (
+   411→                    <span className="text-xs text-muted-foreground line-through">
+   412→                      ₹{product.originalPrice.toLocaleString('en-IN')}
+   413→                    </span>
+   414→                  )}
+   415→                </div>
+   416→                <div className="flex items-center justify-between pt-1">
+   417→                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+   418→                    <span className="text-gold">★</span>
+   419→                    <span>{product.rating}</span>
+   420→                    <span>({product.reviewCount})</span>
+   421→                  </div>
+   422→                  <span className="text-xs text-muted-foreground">
+   423→                    Stock: <span className={cn(
+   424→                      product.stock > 20 ? 'text-green-600 dark:text-green-400' :
+   425→                      product.stock >= 5 ? 'text-amber-600 dark:text-amber-400' :
+   426→                      'text-red-600 dark:text-red-400',
+   427→                      'font-medium'
+   428→                    )}>{product.stock}</span>
+   429→                  </span>
+   430→                </div>
+   431→              </div>
+   432→            </Reorder.Item>
+   433→          ))}
+   434→        </Reorder.Group>
+   435→      )}
+   436→
+   437→      {/* ─── Add From Catalog Modal ────────────────────────── */}
+   438→      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+   439→        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-2xl w-full border border-border/50 max-h-[80vh] flex flex-col">
+   440→          <DialogHeader>
+   441→            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+   442→              <Plus className="w-5 h-5 text-gold" />
+   443→              Add Products to Trending
+   444→            </DialogTitle>
+   445→          </DialogHeader>
+   446→
+   447→          <div className="relative mt-2">
+   448→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   449→            <Input
+   450→              placeholder="Search products by name..."
+   451→              value={catalogSearch}
+   452→              onChange={(e) => setCatalogSearch(e.target.value)}
+   453→              className="rounded-xl pl-10"
+   454→            />
+   455→          </div>
+   456→
+   457→          <div className="flex-1 overflow-y-auto mt-3 space-y-2 pr-1">
+   458→            {catalogLoading ? (
+   459→              <div className="space-y-2">
+   460→                {Array.from({ length: 4 }).map((_, i) => (
+   461→                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
+   462→                ))}
+   463→              </div>
+   464→            ) : nonTrendingCatalog.length === 0 ? (
+   465→              <div className="text-center py-12 text-sm text-muted-foreground">
+   466→                {catalogSearch ? 'No matching products found' : 'All products are already in trending'}
+   467→              </div>
+   468→            ) : (
+   469→              nonTrendingCatalog.map((product) => (
+   470→                <div
+   471→                  key={product.id}
+   472→                  className="flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors"
+   473→                >
+   474→                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted shrink-0">
+   475→                    <img
+   476→                      src={product.image}
+   477→                      alt={product.name}
+   478→                      className="w-full h-full object-cover"
+   479→                    />
+   480→                  </div>
+   481→                  <div className="flex-1 min-w-0">
+   482→                    <p className="text-sm font-medium truncate">{product.name}</p>
+   483→                    <p className="text-xs text-muted-foreground">
+   484→                      {product.category} · ₹{product.price.toLocaleString('en-IN')}
+   485→                    </p>
+   486→                  </div>
+   487→                  <button
+   488→                    onClick={() => handleAddFromCatalog(product)}
+   489→                    disabled={addToTrendingMutation.isPending}
+   490→                    className="h-8 px-3 rounded-lg gradient-gold text-white text-xs font-medium flex items-center gap-1.5 shrink-0 cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50"
+   491→                  >
+   492→                    <Plus className="w-3.5 h-3.5" />
+   493→                    Add
+   494→                  </button>
+   495→                </div>
+   496→              ))
+   497→            )}
+   498→          </div>
+   499→        </DialogContent>
+   500→      </Dialog>
+   501→
+   502→      {/* ─── Edit Product Modal ──────────────────────────── */}
+   503→      <Dialog
+   504→        open={!!editingProduct}
+   505→        onOpenChange={(open) => !open && setEditingProduct(null)}
+   506→      >
+   507→        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-lg w-full border border-border/50">
+   508→          <DialogHeader>
+   509→            <DialogTitle className="text-lg font-semibold">Edit Trending Product</DialogTitle>
+   510→          </DialogHeader>
+   511→
+   512→          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
+   513→            {/* Image Preview + URL */}
+   514→            <div className="space-y-2">
+   515→              <Label className="text-sm font-medium">Product Image</Label>
+   516→              <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border/50 mb-2">
+   517→                <img
+   518→                  src={editForm.image || '/placeholder.png'}
+   519→                  alt="Preview"
+   520→                  className="w-full h-full object-cover"
+   521→                  onError={(e) => {
+   522→                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,' + encodeURIComponent(
+   523→                      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23888"><rect width="400" height="300"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="16">No Image</text></svg>'
+   524→                    )
+   525→                  }}
+   526→                />
+   527→              </div>
+   528→              <div className="relative">
+   529→                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   530→                <Input
+   531→                  placeholder="Image URL (https://...)"
+   532→                  value={editForm.image}
+   533→                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+   534→                  className="rounded-xl pl-10"
+   535→                />
+   536→              </div>
+   537→            </div>
+   538→
+   539→            {/* Name */}
+   540→            <div className="space-y-2">
+   541→              <Label className="text-sm font-medium">
+   542→                Name <span className="text-red-500">*</span>
+   543→              </Label>
+   544→              <Input
+   545→                placeholder="Product name"
+   546→                value={editForm.name}
+   547→                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+   548→                className="rounded-xl"
+   549→              />
+   550→            </div>
+   551→
+   552→            {/* Description */}
+   553→            <div className="space-y-2">
+   554→              <Label className="text-sm font-medium">Description</Label>
+   555→              <Textarea
+   556→                placeholder="Product description..."
+   557→                value={editForm.description}
+   558→                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+   559→                rows={2}
+   560→                className="rounded-xl resize-none"
+   561→              />
+   562→            </div>
+   563→
+   564→            {/* Price Row */}
+   565→            <div className="grid grid-cols-2 gap-4">
+   566→              <div className="space-y-2">
+   567→                <Label className="text-sm font-medium">
+   568→                  Price (₹) <span className="text-red-500">*</span>
+   569→                </Label>
+   570→                <Input
+   571→                  type="number"
+   572→                  step="0.01"
+   573→                  min="0"
+   574→                  placeholder="0.00"
+   575→                  value={editForm.price}
+   576→                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+   577→                  className="rounded-xl"
+   578→                />
+   579→              </div>
+   580→              <div className="space-y-2">
+   581→                <Label className="text-sm font-medium">Original Price (₹)</Label>
+   582→                <Input
+   583→                  type="number"
+   584→                  step="0.01"
+   585→                  min="0"
+   586→                  placeholder="0.00"
+   587→                  value={editForm.originalPrice}
+   588→                  onChange={(e) => setEditForm({ ...editForm, originalPrice: e.target.value })}
+   589→                  className="rounded-xl"
+   590→                />
+   591→              </div>
+   592→            </div>
+   593→
+   594→            {/* Category + Rating */}
+   595→            <div className="grid grid-cols-2 gap-4">
+   596→              <div className="space-y-2">
+   597→                <Label className="text-sm font-medium">Category</Label>
+   598→                <select
+   599→                  value={editForm.category}
+   600→                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+   601→                  className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all cursor-pointer"
+   602→                >
+   603→                  {CATEGORIES.map((c) => (
+   604→                    <option key={c} value={c}>{c}</option>
+   605→                  ))}
+   606→                </select>
+   607→              </div>
+   608→              <div className="space-y-2">
+   609→                <Label className="text-sm font-medium">Rating</Label>
+   610→                <Input
+   611→                  type="number"
+   612→                  step="0.1"
+   613→                  min="0"
+   614→                  max="5"
+   615→                  placeholder="4.5"
+   616→                  value={editForm.rating}
+   617→                  onChange={(e) => setEditForm({ ...editForm, rating: e.target.value })}
+   618→                  className="rounded-xl"
+   619→                />
+   620→              </div>
+   621→            </div>
+   622→
+   623→            {/* Review Count */}
+   624→            <div className="space-y-2">
+   625→              <Label className="text-sm font-medium">Review Count</Label>
+   626→              <Input
+   627→                type="number"
+   628→                min="0"
+   629→                placeholder="0"
+   630→                value={editForm.reviewCount}
+   631→                onChange={(e) => setEditForm({ ...editForm, reviewCount: e.target.value })}
+   632→                className="rounded-xl"
+   633→              />
+   634→            </div>
+   635→          </div>
+   636→
+   637→          {/* Buttons */}
+   638→          <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border/50">
+   639→            <button
+   640→              onClick={() => setEditingProduct(null)}
+   641→              className="h-10 px-5 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors cursor-pointer"
+   642→            >
+   643→              Cancel
+   644→            </button>
+   645→            <button
+   646→              onClick={handleEditSave}
+   647→              disabled={editSaving || !editForm.name.trim() || !editForm.price}
+   648→              className="h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+   649→            >
+   650→              {editSaving ? 'Saving...' : 'Update Product'}
+   651→            </button>
+   652→          </div>
+   653→        </DialogContent>
+   654→      </Dialog>
+   655→
+   656→      {/* ─── Delete Confirmation ────────────────────────── */}
+   657→      <AlertDialog
+   658→        open={!!deleteTarget}
+   659→        onOpenChange={(open) => !open && setDeleteTarget(null)}
+   660→      >
+   661→        <AlertDialogContent className="bg-card rounded-3xl p-6 border border-border/50 max-w-sm">
+   662→          <AlertDialogHeader>
+   663→            <AlertDialogTitle>Remove from Trending?</AlertDialogTitle>
+   664→            <AlertDialogDescription>
+   665→              This will remove &quot;{deleteTarget?.name}&quot; from the Trending Now section. The product itself will not be deleted.
+   666→            </AlertDialogDescription>
+   667→          </AlertDialogHeader>
+   668→          <AlertDialogFooter className="mt-4">
+   669→            <AlertDialogCancel disabled={deleting} className="rounded-xl cursor-pointer">
+   670→              Cancel
+   671→            </AlertDialogCancel>
+   672→            <AlertDialogAction
+   673→              onClick={handleDelete}
+   674→              disabled={deleting}
+   675→              className="rounded-xl bg-red-600 text-white hover:bg-red-700 focus:ring-red-600 cursor-pointer"
+   676→            >
+   677→              {deleting ? 'Removing...' : 'Remove'}
+   678→            </AlertDialogAction>
+   679→          </AlertDialogFooter>
+   680→        </AlertDialogContent>
+   681→      </AlertDialog>
+   682→
+   683→      {/* ─── Full Image Preview ─────────────────────────── */}
+   684→      <Dialog open={!!imgPreview} onOpenChange={(open) => !open && setImgPreview(null)}>
+   685→        <DialogContent className="bg-black/95 rounded-3xl p-2 max-w-3xl w-full border-border/20">
+   686→          <DialogHeader className="sr-only">
+   687→            <DialogTitle>Image Preview</DialogTitle>
+   688→          </DialogHeader>
+   689→          <div className="relative">
+   690→            <button
+   691→              onClick={() => setImgPreview(null)}
+   692→              className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   693→            >
+   694→              <X className="w-4 h-4" />
+   695→            </button>
+   696→            {imgPreview && (
+   697→              <img
+   698→                src={imgPreview}
+   699→                alt="Preview"
+   700→                className="w-full rounded-2xl object-contain max-h-[70vh]"
+   701→              />
+   702→            )}
+   703→          </div>
+   704→        </DialogContent>
+   705→      </Dialog>
+   706→    </div>
+   707→  )
+   708→}

@@ -397,10 +397,21 @@ export function TrendingProducts() {
 }
 
 /* ============================================================
-   4. NewArrivals
+   4. NewArrivals — fetched from /api/new-arrivals
    ============================================================ */
 
-const newArrivals = [
+interface NewArrivalProductData {
+  id: string
+  name: string
+  price: number
+  originalPrice: number | null
+  image: string
+  rating: number
+  reviewCount: number
+  isNew: boolean
+}
+
+const FALLBACK_NEW_ARRIVALS = [
   {
     id: 'new-1',
     name: 'Oversized Coat',
@@ -464,6 +475,25 @@ const newArrivals = [
 ];
 
 export function NewArrivals() {
+  const [products, setProducts] = useState<NewArrivalProductData[]>([])
+
+  useEffect(() => {
+    fetch('/api/new-arrivals')
+      .then((r) => r.json())
+      .then((data: NewArrivalProductData[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data)
+        } else {
+          setProducts(FALLBACK_NEW_ARRIVALS)
+        }
+      })
+      .catch(() => {
+        setProducts(FALLBACK_NEW_ARRIVALS)
+      })
+  }, [])
+
+  const displayProducts = products.length > 0 ? products : FALLBACK_NEW_ARRIVALS
+
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
@@ -471,7 +501,7 @@ export function NewArrivals() {
 
         <ScrollReveal>
           <div className="flex gap-4 md:gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-2">
-            {newArrivals.map((product, idx) => (
+            {displayProducts.map((product, idx) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
