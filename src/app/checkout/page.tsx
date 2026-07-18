@@ -258,6 +258,13 @@ export default function CheckoutPage() {
 
           <div className="mt-8 flex items-center justify-center gap-3">
             <Link
+              href="/orders"
+              className="h-11 px-6 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 hover:shadow-luxury-lg transition-all"
+            >
+              <Package className="w-4 h-4" />
+              Track Order
+            </Link>
+            <Link
               href="/"
               className="h-11 px-6 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center gap-2"
             >

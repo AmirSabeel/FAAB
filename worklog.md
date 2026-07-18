@@ -110,3 +110,30 @@ Stage Summary:
 - Fixed "string did not match expected pattern" error in admin product section
 - Users can now upload their own photos when adding/editing products
 - Upload generates 5 optimized WebP sizes automatically
+
+---
+Task ID: 3
+Agent: Main
+Task: Build Order History & Tracking page (/orders)
+
+Work Log:
+- Created /api/orders/list/route.ts — GET endpoint that fetches orders by email, phone, or order number
+- Returns full order details: items, prices, status, shipping address, timestamps
+- Built /orders/page.tsx with:
+  - Search by email, phone, or order number (tabbed input)
+  - Order list cards with expand/collapse animation
+  - 5-step status timeline (Pending → Confirmed → Processing → Shipped → Delivered)
+  - Cancelled state display
+  - Copy order number to clipboard
+  - Price breakdown (subtotal, tax, shipping, total)
+  - Shipping address display
+  - Empty state with CTA to shop
+  - Loading skeleton, error handling
+- Added "Track Order" button on checkout confirmation page linking to /orders
+- Verified API: returns 400 without params, 200 with results/empty
+
+Stage Summary:
+- Created /api/orders/list API endpoint
+- Created /orders page with full order tracking UI
+- Checkout confirmation now links to order tracking
+- Completes the purchase-to-delivery flow
