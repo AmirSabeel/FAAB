@@ -87,3 +87,26 @@ Stage Summary:
 - Product detail page tries API first, falls back to static data gracefully
 - Shop page supports /shop?search=... from search modal trending categories
 - Build passes clean with 0 errors, all 18 routes working
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix product image upload — "The string did not match the expected pattern"
+
+Work Log:
+- Identified root cause: /api/upload route was completely missing (404)
+- The ImageUpload component was posting to a non-existent endpoint
+- The browser received HTML (404 page) instead of JSON, causing parse error
+- Created /api/upload/route.ts with full sharp-based image processing
+- Generates 5 sizes: thumb (100×133), small (300×400), medium (500×667), large (800×1067), original
+- All processed to WebP format for optimal file sizes
+- Validates file type (JPG/PNG/WebP/GIF/AVIF) and size (max 10MB)
+- Creates upload directories automatically if missing
+- Improved error handling in ImageUpload component (try/catch on JSON parse)
+- Verified upload works end-to-end with test image
+
+Stage Summary:
+- Created /api/upload/route.ts — the missing upload endpoint
+- Fixed "string did not match expected pattern" error in admin product section
+- Users can now upload their own photos when adding/editing products
+- Upload generates 5 optimized WebP sizes automatically

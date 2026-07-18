@@ -82,11 +82,22 @@ export function ImageUpload({ value, onChange, label = 'Product Image' }: ImageU
       clearInterval(progressInterval)
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Upload failed')
+        let msg = 'Upload failed'
+        try {
+          const data = await res.json()
+          msg = data.error || msg
+        } catch {
+          msg = `Server error (${res.status}). Is the upload API available?`
+        }
+        throw new Error(msg)
       }
 
-      const data: UploadResult = await res.json()
+      let data: UploadResult
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error('Invalid response from server')
+      }
       setProgress(100)
 
       setTimeout(() => {
