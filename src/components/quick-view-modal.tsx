@@ -403,7 +403,7 @@ function QuickViewPanel({
             onClick={handleWishlist}
             className={cn(
               'w-full py-3 rounded-2xl border font-medium text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer',
-              wishlisted
+              isWishlisted
                 ? 'border-gold text-gold'
                 : 'border-border hover:border-gold hover:text-gold'
             )}
@@ -411,10 +411,10 @@ function QuickViewPanel({
             <Heart
               className={cn(
                 'w-4 h-4 transition-all duration-300',
-                wishlisted && 'fill-gold'
+                isWishlisted && 'fill-gold'
               )}
             />
-            {wishlisted ? 'Added to Wishlist' : 'Add to Wishlist'}
+            {isWishlisted ? 'Added to Wishlist' : 'Add to Wishlist'}
           </motion.button>
 
           {/* 10. Features List */}

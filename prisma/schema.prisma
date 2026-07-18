@@ -49,6 +49,8 @@ model Order {
   orderNumber String     @unique
   customerId  String
   customer    Customer   @relation(fields: [customerId], references: [id])
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id])
   status      String     @default("pending")
   total       Float
   subtotal    Float
@@ -74,6 +76,21 @@ model OrderItem {
   quantity     Int
   size         String?
   color        String?
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("customer")
+  avatar        String?
+  phone         String?
+  city          String?
+  country       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        Order[]
 }
 
 model SiteSetting {

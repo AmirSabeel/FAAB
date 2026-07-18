@@ -168,3 +168,35 @@ Stage Summary:
 - New file: src/app/wishlist/page.tsx
 - Modified files: wishlist-store.ts (added setItems), wishlist-drawer.tsx (real Move to Bag, View All link), navbar.tsx (wishlist badge), mobile-nav.tsx (Link to /wishlist, props), page.tsx (BottomNavBar props)
 - Complete wishlist experience: heart icon on product → drawer preview → full page management → add to cart
+---
+Task ID: 1
+Agent: Main
+Task: Build User Authentication system (login/signup/profile) + fix quick-view-modal bug
+
+Work Log:
+- Fixed bug in quick-view-modal.tsx: `wishlisted` → `isWishlisted` (runtime error on wishlist toggle)
+- Installed bcryptjs + @types/bcryptjs for password hashing
+- Added User model to Prisma schema (id, name, email, password, role, avatar, phone, city, country)
+- Added optional userId field to Order model for linking orders to authenticated users
+- Pushed schema to SQLite DB
+- Created NextAuth v4 config (src/lib/auth.ts) with Credentials provider, JWT strategy
+- Created /api/auth/[...nextauth]/route.ts (GET + POST)
+- Created /api/auth/register/route.ts (POST with Zod validation, bcrypt hash)
+- Created /api/auth/profile/route.ts (GET profile+orders, PUT update)
+- Created SessionProvider wrapper (src/components/session-provider.tsx)
+- Wrapped ThemeProvider + children in SessionProvider in root layout
+- Built AuthModal component (src/components/auth-modal.tsx) - animated modal with login/signup tabs, form validation, spring animations, gold accent styling
+- Built ProfileDrawer component (src/components/profile-drawer.tsx) - slide-in panel with user info, editable profile, recent orders with status badges, sign out
+- Updated Navbar (src/components/navbar.tsx) - added User icon → Sign In when logged out, gold avatar initials when logged in, new onAuthClick/onProfileClick props
+- Updated BottomNavBar (src/components/mobile-nav.tsx) - profile tab opens auth or profile drawer based on session
+- Wired auth modal + profile drawer into page.tsx with state management + body scroll lock
+- Updated checkout API (/api/orders/route.ts) to attach userId when user is logged in
+- All new code passes ESLint clean (0 errors)
+- Browser-verified full flow: Sign Up → auto-login → avatar shows → Profile Drawer → Edit Profile (city saved) → Sign Out → back to Sign In → Login → avatar shows again
+
+Stage Summary:
+- Complete auth system built: signup, login, profile management, session persistence (JWT, 30-day expiry)
+- Navbar dynamically switches between User icon (logged out) and gold initials avatar (logged in)
+- Mobile bottom nav Profile tab routes to auth or profile drawer intelligently
+- Orders placed while logged in are automatically linked to the user account
+- Fixed pre-existing bug in quick-view-modal wishlist toggle

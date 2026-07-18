@@ -1,5 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -10,6 +12,10 @@ export async function POST(req: NextRequest) {
     if (!items?.length || !customer?.name || !customer?.email) {
       return NextResponse.json({ error: 'Items and customer info are required' }, { status: 400 })
     }
+
+    // Get session to link order to user if logged in
+    const session = await getServerSession(authOptions)
+    const userId = session?.user?.id || null
 
     // Calculate totals
     const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0)
@@ -54,6 +60,7 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         customerId: customerRecord.id,
+        userId,
         status: 'pending',
         total,
         subtotal,

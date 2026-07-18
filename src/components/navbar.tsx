@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, Search, Heart, ShoppingBag, Menu } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { Sun, Moon, Search, Heart, ShoppingBag, Menu, User as UserIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/components/cart-drawer'
 import { useWishlistStore } from '@/components/wishlist-store'
@@ -23,6 +24,8 @@ interface NavbarProps {
   onSearchClick?: () => void
   onWishlistClick?: () => void
   onCartClick?: () => void
+  onAuthClick?: () => void
+  onProfileClick?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -35,12 +38,13 @@ function useHydrated() {
   )
 }
 
-export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick }: NavbarProps) {
+export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick, onAuthClick, onProfileClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const cartCount = useCartStore((s) => s.totalItems())
   const wishlistCount = useWishlistStore((s) => s.items.length)
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
+  const { data: session, status } = useSession()
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 50)
@@ -128,6 +132,30 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
                   <Sun className="w-[18px] h-[18px]" />
                 ) : (
                   <Moon className="w-[18px] h-[18px]" />
+                )}
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* User / Auth Button */}
+          <AnimatePresence mode="wait">
+            {mounted && (
+              <motion.button
+                key={session ? 'profile' : 'login'}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                onClick={session ? onProfileClick : onAuthClick}
+                className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors"
+                aria-label={session ? 'My Account' : 'Sign In'}
+              >
+                {session ? (
+                  <div className="w-7 h-7 rounded-full gradient-gold flex items-center justify-center text-white text-[11px] font-semibold">
+                    {(session.user?.name || 'U').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                ) : (
+                  <UserIcon className="w-[18px] h-[18px]" />
                 )}
               </motion.button>
             )}

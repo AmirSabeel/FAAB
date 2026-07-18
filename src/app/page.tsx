@@ -23,6 +23,8 @@ import { PageLoader } from '@/components/page-loader'
 import { CartDrawer, useCartStore } from '@/components/cart-drawer'
 import QuickViewModal from '@/components/quick-view-modal'
 import { WishlistDrawer } from '@/components/wishlist-drawer'
+import { AuthModal } from '@/components/auth-modal'
+import { ProfileDrawer } from '@/components/profile-drawer'
 import { ShoppingBag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -45,19 +47,21 @@ export default function Home() {
   const [wishlistOpen, setWishlistOpen] = useState(false)
   const [quickViewOpen, setQuickViewOpen] = useState(false)
   const [quickViewProduct, setQuickViewProduct] = useState<null | { id: string; name: string; price: number; originalPrice?: number; image: string; rating: number; reviewCount: number; description?: string }>(null)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const mounted = useHydrated()
   const { isOpen, close, toggle } = useMobileNav()
   const cartCount = useCartStore((s) => s.totalItems())
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
-    if (searchOpen || isOpen || cartOpen || wishlistOpen || quickViewOpen) {
+    if (searchOpen || isOpen || cartOpen || wishlistOpen || quickViewOpen || authOpen || profileOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
-  }, [searchOpen, isOpen, cartOpen, wishlistOpen, quickViewOpen])
+  }, [searchOpen, isOpen, cartOpen, wishlistOpen, quickViewOpen, authOpen, profileOpen])
 
   // Welcome toast
   useEffect(() => {
@@ -104,12 +108,14 @@ export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
       <PageLoader />
-      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} />
+      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} onAuthClick={() => setAuthOpen(true)} onProfileClick={() => setProfileOpen(true)} />
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <MobileNavDrawer isOpen={isOpen} onClose={close} onAdminClick={() => setIsAdmin(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <WishlistDrawer isOpen={wishlistOpen} onClose={() => setWishlistOpen(false)} />
       <QuickViewModal isOpen={quickViewOpen} onClose={() => { setQuickViewOpen(false); setQuickViewProduct(null) }} product={quickViewProduct} />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      <ProfileDrawer isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
 
       {/* Floating Cart Toggle */}
       {mounted && (
@@ -146,7 +152,7 @@ export default function Home() {
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FAQSection /></section>
       </main>
       <Footer />
-      <BottomNavBar onSearchClick={() => setSearchOpen(true)} onCartClick={() => setCartOpen(true)} />
+      <BottomNavBar onSearchClick={() => setSearchOpen(true)} onCartClick={() => setCartOpen(true)} onAuthClick={() => setAuthOpen(true)} onProfileClick={() => setProfileOpen(true)} />
       <BackToTop />
       <WhatsAppButton />
     </QueryClientProvider>

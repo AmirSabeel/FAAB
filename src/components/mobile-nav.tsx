@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
+import { useSession } from 'next-auth/react'
 import {
   Home,
   Search,
@@ -219,17 +220,25 @@ export function MobileNavDrawer({ isOpen, onClose, onAdminClick }: MobileNavDraw
 interface BottomNavBarProps {
   onSearchClick?: () => void
   onCartClick?: () => void
+  onAuthClick?: () => void
+  onProfileClick?: () => void
 }
 
-export function BottomNavBar({ onSearchClick, onCartClick }: BottomNavBarProps) {
+export function BottomNavBar({ onSearchClick, onCartClick, onAuthClick, onProfileClick }: BottomNavBarProps) {
   const [activeKey, setActiveKey] = useState<string>('home')
   const wishlistCount = useWishlistStore((s) => s.items.length)
+  const { data: session } = useSession()
 
   function handleTabClick(key: string) {
     setActiveKey(key)
     if (key === 'home') return
     if (key === 'search') { onSearchClick?.(); return }
     if (key === 'cart') { onCartClick?.(); return }
+    if (key === 'profile') {
+      if (session) onProfileClick?.()
+      else onAuthClick?.()
+      return
+    }
   }
 
   return (
