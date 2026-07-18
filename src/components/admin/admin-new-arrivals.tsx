@@ -12,7 +12,6 @@ import {
   X,
   Eye,
   ArrowUpDown,
-  Image as ImageIconLucide,
 } from 'lucide-react'
 import { motion, Reorder } from 'framer-motion'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface NewArrivalProduct {
   id: string
@@ -500,31 +500,12 @@ export function AdminNewArrivals() {
           </DialogHeader>
 
           <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
-            {/* Image Preview + URL */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Product Image</Label>
-              <div className="aspect-video rounded-xl overflow-hidden bg-muted border border-border/50 mb-2">
-                <img
-                  src={editForm.image || '/placeholder.png'}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,' + encodeURIComponent(
-                      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23888"><rect width="400" height="300"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="16">No Image</text></svg>'
-                    )
-                  }}
-                />
-              </div>
-              <div className="relative">
-                <ImageIconLucide className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Image URL (https://...)"
-                  value={editForm.image}
-                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
-                  className="rounded-xl pl-10"
-                />
-              </div>
-            </div>
+            {/* Image Upload */}
+            <ImageUpload
+              value={editForm.image}
+              onChange={(url) => setEditForm({ ...editForm, image: url })}
+              label="Product Image"
+            />
 
             {/* Name */}
             <div className="space-y-2">

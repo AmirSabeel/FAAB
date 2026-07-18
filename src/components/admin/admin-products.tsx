@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 const CATEGORIES = [
   "Women's Fashion",
@@ -231,6 +232,10 @@ export function AdminProducts() {
       toast.error('Name and price are required')
       return
     }
+    if (!form.image.trim()) {
+      toast.error('Please upload a product image')
+      return
+    }
     setSaving(true)
     const body: Record<string, unknown> = {
       name: form.name.trim(),
@@ -239,7 +244,7 @@ export function AdminProducts() {
       originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
       category: form.category,
       stock: parseInt(form.stock) || 0,
-      image: form.image.trim() || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&q=80',
+      image: form.image.trim() || '',
       isFeatured: form.isFeatured,
       isNew: form.isNew,
       status: 'active',
@@ -594,19 +599,12 @@ export function AdminProducts() {
               </div>
             </div>
 
-            {/* Image URL */}
-            <div className="space-y-2">
-              <Label htmlFor="prod-image" className="text-sm font-medium">
-                Image URL
-              </Label>
-              <Input
-                id="prod-image"
-                placeholder="https://..."
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
+            {/* Image Upload */}
+            <ImageUpload
+              value={form.image}
+              onChange={(url) => setForm({ ...form, image: url })}
+              label="Product Image"
+            />
 
             {/* Checkboxes */}
             <div className="flex items-center gap-6">
