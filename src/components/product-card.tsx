@@ -4,7 +4,10 @@ import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Heart, Star, ShoppingBag, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useCartStore } from '@/components/cart-drawer';
+import { useWishlistStore } from '@/components/wishlist-store';
 
 interface ProductCardProps {
   id: string;
@@ -49,19 +52,44 @@ export default function ProductCard({
   isNew,
   onQuickView,
 }: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
-  const handleWishlist = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsWishlisted((prev) => !prev);
-  }, []);
+  // ── Real store connections ──
+  const addItem = useCartStore((s) => s.addItem);
+  const wishlisted = useWishlistStore((s) => s.isInWishlist(id));
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+
+  const handleWishlist = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleWishlist({ id, name, price, image });
+      if (!wishlisted) {
+        toast.success('Added to wishlist', {
+          description: name,
+          duration: 2000,
+        });
+      }
+    },
+    [id, name, price, image, toggleWishlist, wishlisted]
+  );
 
   const handleAddToCart = useCallback(() => {
+    addItem({ id, name, price, image });
     setAddedToCart(true);
+    toast.success('Added to cart', {
+      description: name,
+      duration: 2000,
+    });
     setTimeout(() => setAddedToCart(false), 1500);
-  }, []);
+  }, [id, name, price, image, addItem]);
+
+  // Compute sale badge from prices if not provided
+  const displayBadge = badge
+    ? badge
+    : originalPrice && originalPrice > price
+      ? `-${Math.round(((originalPrice - price) / originalPrice) * 100)}%`
+      : undefined;
 
   return (
     <motion.div
@@ -86,12 +114,12 @@ export default function ProductCard({
           onClick={handleWishlist}
           whileTap={{ scale: 0.85 }}
           className="absolute top-3 right-3 w-10 h-10 rounded-full glass flex items-center justify-center cursor-pointer z-10"
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
             className={cn(
               'w-[18px] h-[18px] transition-colors duration-300',
-              isWishlisted
+              wishlisted
                 ? 'text-red-500 fill-red-500'
                 : 'text-white'
             )}
@@ -99,12 +127,12 @@ export default function ProductCard({
         </motion.button>
 
         {/* Badge */}
-        {badge && (
+        {displayBadge && (
           <span className="absolute top-3 left-3 gradient-gold text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
-            {badge}
+            {displayBadge}
           </span>
         )}
-        {isNew && !badge && (
+        {isNew && !displayBadge && (
           <span className="absolute top-3 left-3 bg-black text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
             NEW
           </span>

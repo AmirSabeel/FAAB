@@ -1,16 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X } from 'lucide-react';
+import { Search, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { searchProducts, ALL_PRODUCTS } from '@/data/products';
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProductClick?: (productId: string) => void;
+}
+
+interface SearchResult {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice: number | null;
+  image: string;
+  category: string;
 }
 
 const popularSearches = [
@@ -54,25 +62,69 @@ const panelVariants = {
   },
 };
 
-export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProps) {
+export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [recommended, setRecommended] = useState<SearchResult[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const results = useMemo(() => searchProducts(query), [query]);
-  const recommended = useMemo(() => ALL_PRODUCTS.slice(0, 4), []);
+  // Fetch recommended products on mount
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/products?limit=4&sort=newest')
+        .then((r) => r.json())
+        .then((data) => setRecommended(data.products || []))
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  // Live search with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          search: trimmed,
+          limit: '8',
+          sort: 'newest',
+        });
+        const res = await fetch(`/api/products?${params}`);
+        const data = await res.json();
+        setResults(data.products || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      // Slight delay so animation starts first
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
     }
-    // Reset query when modal closes
     if (!isOpen) {
       setQuery('');
+      setResults([]);
     }
   }, [isOpen]);
 
@@ -109,16 +161,13 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
     [onClose]
   );
 
-  const handleSearchClick = useCallback(
-    (term: string) => {
-      setQuery(term);
-      if (inputRef.current) {
-        inputRef.current.value = term;
-        inputRef.current.focus();
-      }
-    },
-    []
-  );
+  const handleSearchClick = useCallback((term: string) => {
+    setQuery(term);
+    if (inputRef.current) {
+      inputRef.current.value = term;
+      inputRef.current.focus();
+    }
+  }, []);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,13 +176,10 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
     []
   );
 
-  const handleProductClick = useCallback(
-    (productId: string) => {
-      onProductClick?.(productId);
-      onClose();
-    },
-    [onProductClick, onClose]
-  );
+  const handleClose = useCallback(() => {
+    setQuery('');
+    onClose();
+  }, [onClose]);
 
   return (
     <AnimatePresence>
@@ -156,17 +202,19 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
             initial="hidden"
             animate="visible"
             exit="exit"
-            className={cn(
-              'w-full max-w-2xl mx-auto mt-24 px-4'
-            )}
+            className="w-full max-w-2xl mx-auto mt-24 px-4"
           >
             <div className="glass-card rounded-3xl p-6">
               {/* Search input row */}
               <div className="flex items-center gap-3">
-                <Search
-                  className="w-5 h-5 text-muted-foreground shrink-0"
-                  strokeWidth={2}
-                />
+                {searching ? (
+                  <Loader2 className="w-5 h-5 text-muted-foreground shrink-0 animate-spin" />
+                ) : (
+                  <Search
+                    className="w-5 h-5 text-muted-foreground shrink-0"
+                    strokeWidth={2}
+                  />
+                )}
                 <input
                   ref={inputRef}
                   type="text"
@@ -182,10 +230,7 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
                   aria-label="Search"
                 />
                 <button
-                  onClick={() => {
-                    setQuery('');
-                    onClose();
-                  }}
+                  onClick={handleClose}
                   aria-label="Close search"
                   className={cn(
                     'shrink-0',
@@ -206,11 +251,19 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
               {query.trim() ? (
                 /* Search results */
                 <div className="max-h-[50vh] overflow-y-auto">
-                  {results.length > 0 ? (
+                  {searching ? (
+                    <div className="py-12 text-center">
+                      <Loader2 className="w-6 h-6 text-muted-foreground animate-spin mx-auto mb-3" />
+                      <p className="text-muted-foreground text-sm">
+                        Searching...
+                      </p>
+                    </div>
+                  ) : results.length > 0 ? (
                     results.map((product) => (
-                      <button
+                      <Link
                         key={product.id}
-                        onClick={() => handleProductClick(product.id)}
+                        href={`/product/${product.id}`}
+                        onClick={onClose}
                         className={cn(
                           'w-full flex items-center gap-4',
                           'py-3 border-b border-border/30 last:border-0',
@@ -246,13 +299,19 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
                             )}
                           </div>
                         </div>
-                      </button>
+                      </Link>
                     ))
                   ) : (
                     <div className="py-12 text-center">
                       <p className="text-muted-foreground text-sm">
                         No results found for &ldquo;{query}&rdquo;
                       </p>
+                      <button
+                        onClick={() => setQuery('')}
+                        className="mt-3 text-sm text-gold hover:underline cursor-pointer"
+                      >
+                        Clear search
+                      </button>
                     </div>
                   )}
                 </div>
@@ -260,54 +319,57 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
                 /* Default content when query is empty */
                 <>
                   {/* Recommended products */}
-                  <div className="mb-5">
-                    <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">
-                      Recommended
-                    </p>
-                    <div className="max-h-[50vh] overflow-y-auto">
-                      {recommended.map((product) => (
-                        <button
-                          key={product.id}
-                          onClick={() => handleProductClick(product.id)}
-                          className={cn(
-                            'w-full flex items-center gap-4',
-                            'py-3 border-b border-border/30 last:border-0',
-                            'hover:bg-muted/50 rounded-xl px-2 -mx-2',
-                            'transition-colors duration-200',
-                            'cursor-pointer text-left'
-                          )}
-                        >
-                          <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-muted">
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                              sizes="80px"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">
-                              {product.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {product.category}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="font-semibold text-foreground">
-                                ₹{product.price.toLocaleString('en-IN')}
-                              </span>
-                              {product.originalPrice && (
-                                <span className="text-sm text-muted-foreground line-through">
-                                  ₹{product.originalPrice.toLocaleString('en-IN')}
-                                </span>
-                              )}
+                  {recommended.length > 0 && (
+                    <div className="mb-5">
+                      <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">
+                        Recommended
+                      </p>
+                      <div className="max-h-[50vh] overflow-y-auto">
+                        {recommended.map((product) => (
+                          <Link
+                            key={product.id}
+                            href={`/product/${product.id}`}
+                            onClick={onClose}
+                            className={cn(
+                              'w-full flex items-center gap-4',
+                              'py-3 border-b border-border/30 last:border-0',
+                              'hover:bg-muted/50 rounded-xl px-2 -mx-2',
+                              'transition-colors duration-200',
+                              'cursor-pointer text-left'
+                            )}
+                          >
+                            <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-muted">
+                              <Image
+                                src={product.image}
+                                alt={product.name}
+                                fill
+                                className="object-cover"
+                                sizes="80px"
+                              />
                             </div>
-                          </div>
-                        </button>
-                      ))}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {product.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {product.category}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="font-semibold text-foreground">
+                                  ₹{product.price.toLocaleString('en-IN')}
+                                </span>
+                                {product.originalPrice && (
+                                  <span className="text-sm text-muted-foreground line-through">
+                                    ₹{product.originalPrice.toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Popular Searches */}
                   <div className="mb-5">
@@ -341,9 +403,10 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {trendingCategories.map((category) => (
-                        <button
+                        <Link
                           key={category}
-                          onClick={() => handleSearchClick(category)}
+                          href={`/shop?search=${encodeURIComponent(category)}`}
+                          onClick={onClose}
                           className={cn(
                             'px-3 py-1.5 rounded-full',
                             'bg-muted/60',
@@ -354,7 +417,7 @@ export function SearchModal({ isOpen, onClose, onProductClick }: SearchModalProp
                           )}
                         >
                           {category}
-                        </button>
+                        </Link>
                       ))}
                     </div>
                   </div>

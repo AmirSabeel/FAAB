@@ -92,8 +92,10 @@ function ShopPageContent() {
 
   const initialCategory = searchParams.get('category') || 'All'
   const initialSale = searchParams.get('sale') === 'true'
+  const initialSearch = searchParams.get('search') || ''
 
   const [category, setCategory] = useState(initialCategory)
+  const [search, setSearch] = useState(initialSearch)
   const [sort, setSort] = useState('newest')
   const [page, setPage] = useState(1)
   const [products, setProducts] = useState<Product[]>([])
@@ -104,12 +106,13 @@ function ShopPageContent() {
   const [sortOpen, setSortOpen] = useState(false)
 
   // Fetch products
-  const fetchProducts = useCallback(async (cat: string, s: string, p: number, sale: boolean) => {
+  const fetchProducts = useCallback(async (cat: string, s: string, p: number, sale: boolean, q: string) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (cat && cat !== 'All') params.set('category', cat)
     if (sale) params.set('sale', 'true')
     else params.set('sort', s)
+    if (q) params.set('search', q)
     params.set('page', String(p))
     params.set('limit', '24')
 
@@ -127,13 +130,15 @@ function ShopPageContent() {
   }, [])
 
   useEffect(() => {
-    fetchProducts(category, sort, page, initialSale)
-  }, [category, sort, page, initialSale, fetchProducts])
+    fetchProducts(category, sort, page, initialSale, search)
+  }, [category, sort, page, initialSale, search, fetchProducts])
 
-  // Sync category from URL on mount
+  // Sync category & search from URL on mount
   useEffect(() => {
     const cat = searchParams.get('category') || 'All'
+    const q = searchParams.get('search') || ''
     setCategory(cat)
+    setSearch(q)
   }, [searchParams])
 
   function handleCategoryChange(cat: string) {
@@ -168,7 +173,7 @@ function ShopPageContent() {
             <span className="hidden sm:inline">Back</span>
           </Link>
           <h1 className="text-sm font-semibold tracking-[0.2em] uppercase">
-            {initialSale ? 'Sale' : category === 'All' ? 'Shop All' : CATEGORY_SHORT[category] || category}
+            {search ? `Search: "${search}"` : initialSale ? 'Sale' : category === 'All' ? 'Shop All' : CATEGORY_SHORT[category] || category}
           </h1>
           <div className="flex items-center gap-1">
             <button

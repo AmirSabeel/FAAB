@@ -13,16 +13,47 @@ import {
   Check,
   Minus,
   Plus,
-  Truck,
-  RefreshCw,
-  Shield,
   CheckCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getProductById, getRelatedProducts, ALL_PRODUCTS } from '@/data/products'
+import { getProductById, getRelatedProducts } from '@/data/products'
 import ProductCard from '@/components/product-card'
 import { useCartStore } from '@/components/cart-drawer'
 import { useWishlistStore } from '@/components/wishlist-store'
+import { toast } from 'sonner'
+
+// ─── API product shape ───────────────────────────────────────────────────
+
+interface ApiProduct {
+  id: string
+  name: string
+  description: string
+  price: number
+  originalPrice: number | null
+  image: string
+  images: string[]
+  category: string
+  rating: number
+  reviewCount: number
+  stock: number
+  isNew: boolean
+  isFeatured: boolean
+  sizes: string[]
+  colors: { name: string; hex: string }[]
+}
+
+interface ApiRelatedItem {
+  id: string
+  name: string
+  price: number
+  originalPrice: number | null
+  image: string
+  category: string
+  rating: number
+  reviewCount: number
+  isNew: boolean
+  isFeatured: boolean
+}
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
 
@@ -72,26 +103,86 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
+// ─── Loading State ───────────────────────────────────────────────────────────
+
+function ProductDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-24 md:py-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+          <div className="aspect-[3/4] rounded-3xl bg-muted animate-pulse" />
+          <div className="space-y-5">
+            <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-3/4 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-40 bg-muted rounded animate-pulse" />
+            <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+            <div className="h-20 w-full bg-muted rounded animate-pulse" />
+            <div className="flex gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-11 w-11 bg-muted rounded-xl animate-pulse" />
+              ))}
+            </div>
+            <div className="h-12 w-full bg-muted rounded-2xl animate-pulse" />
+            <div className="h-12 w-full bg-muted rounded-2xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function ProductDetailPage() {
   const params = useParams()
   const id = params.id as string
-  const product = getProductById(id)
-  const relatedProducts = getRelatedProducts(id)
 
+  // ── State ──
+  const [apiProduct, setApiProduct] = useState<ApiProduct | null>(null)
+  const [apiRelated, setApiRelated] = useState<ApiRelatedItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [selectedColor, setSelectedColor] = useState(0)
+  const [selectedSize, setSelectedSize] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [addedToCart, setAddedToCart] = useState(false)
+  const [apiError, setApiError] = useState(false)
+
+  // Stores
   const addItem = useCartStore((s) => s.addItem)
   const wishlistToggleItem = useWishlistStore((s) => s.toggleItem)
   const isWishlisted = useWishlistStore((s) => s.isInWishlist)
 
-  // ── State ──
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedColor, setSelectedColor] = useState(0)
-  const [selectedSize, setSelectedSize] = useState(
-    product?.sizes?.[0] ? Math.floor(product.sizes.length / 2) : 0
-  )
-  const [quantity, setQuantity] = useState(1)
-  const [addedToCart, setAddedToCart] = useState(false)
+  // ── Fetch from API ──
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setApiError(false)
+
+    Promise.all([
+      fetch(`/api/products/${id}`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`/api/products/related?id=${id}&limit=4`).then((r) => r.json()),
+    ])
+      .then(([product, related]) => {
+        if (cancelled) return
+        if (product) {
+          setApiProduct(product)
+          setApiRelated(related.products || [])
+        } else {
+          setApiError(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setApiError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id])
 
   // Scroll to top on mount / id change
   useEffect(() => {
@@ -102,55 +193,25 @@ export default function ProductDetailPage() {
   useEffect(() => {
     setSelectedImage(0)
     setSelectedColor(0)
-    setSelectedSize(
-      product?.sizes?.[0] ? Math.floor(product.sizes.length / 2) : 0
-    )
+    setSelectedSize(0)
     setQuantity(1)
     setAddedToCart(false)
-  }, [id, product?.sizes])
+  }, [id])
 
-  const wishlisted = product ? isWishlisted(product.id) : false
+  // ── Determine data source ──
+  const staticProduct = getProductById(id)
+  const staticRelated = getRelatedProducts(id)
 
-  const handleAddToCart = useCallback(() => {
-    if (!product) return
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0],
-      size: product.sizes[selectedSize],
-      color: product.colors[selectedColor]?.name,
-    })
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 1500)
-  }, [product, addItem, selectedSize, selectedColor])
+  const product = apiProduct || staticProduct
+  const relatedProducts = apiRelated.length > 0
+    ? apiRelated.map((rp) => ({
+        ...rp,
+        badge: rp.originalPrice
+          ? `-${Math.round(((rp.originalPrice - rp.price) / rp.originalPrice) * 100)}%`
+          : undefined,
+      }))
+    : staticRelated
 
-  const handleWishlist = useCallback(() => {
-    if (!product) return
-    wishlistToggleItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0],
-    })
-  }, [product, wishlistToggleItem])
-
-  const decrementQuantity = useCallback(() => {
-    setQuantity((prev) => Math.max(1, prev - 1))
-  }, [])
-
-  const incrementQuantity = useCallback(() => {
-    setQuantity((prev) => Math.min(99, prev + 1))
-  }, [])
-
-  const discountPercent =
-    product?.originalPrice && product.price < product.originalPrice
-      ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) * 100
-        )
-      : 0
-
-  // ── Not Found ──
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
@@ -167,6 +228,60 @@ export default function ProductDetailPage() {
     )
   }
 
+  if (loading) return <ProductDetailSkeleton />
+
+  // ── Derived values ──
+  const images = product.images.length > 0 ? product.images : [product.image]
+  const sizes = product.sizes.length > 0 ? product.sizes : ['One Size']
+  const colors = product.colors.length > 0 ? product.colors : []
+
+  const wishlisted = isWishlisted(product.id)
+
+  const handleAddToCart = useCallback(() => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0],
+      size: sizes[selectedSize],
+      color: colors[selectedColor]?.name,
+    })
+    setAddedToCart(true)
+    toast.success('Added to cart', {
+      description: `${product.name}${sizes[selectedSize] !== 'One Size' ? ` (${sizes[selectedSize]})` : ''}`,
+      duration: 2000,
+    })
+    setTimeout(() => setAddedToCart(false), 1500)
+  }, [product, addItem, selectedSize, selectedColor, images, sizes, colors])
+
+  const handleWishlist = useCallback(() => {
+    wishlistToggleItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0],
+    })
+  }, [product, wishlistToggleItem, images])
+
+  const decrementQuantity = useCallback(() => {
+    setQuantity((prev) => Math.max(1, prev - 1))
+  }, [])
+
+  const incrementQuantity = useCallback(() => {
+    setQuantity((prev) => Math.min(99, prev + 1))
+  }, [])
+
+  const discountPercent =
+    product.originalPrice && product.price < product.originalPrice
+      ? Math.round(
+          ((product.originalPrice - product.price) / product.originalPrice) * 100
+        )
+      : 0
+
+  const badge = product.originalPrice && product.price < product.originalPrice
+    ? `-${discountPercent}%`
+    : undefined
+
   return (
     <div className="min-h-screen bg-background">
       {/* ── Back Button (fixed) ── */}
@@ -177,6 +292,15 @@ export default function ProductDetailPage() {
       >
         <ArrowLeft className="w-5 h-5" />
       </Link>
+
+      {/* ── API fallback notice ── */}
+      {apiError && staticProduct && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="glass-card px-4 py-2 rounded-xl text-xs text-muted-foreground">
+            Showing cached product data
+          </div>
+        </div>
+      )}
 
       {/* ── Main Content ── */}
       <motion.main
@@ -191,19 +315,19 @@ export default function ProductDetailPage() {
             {/* Main Image */}
             <div className="aspect-[3/4] rounded-3xl overflow-hidden relative bg-muted">
               <Image
-                src={product.images[selectedImage]}
+                src={images[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
-              {product.badge && (
+              {badge && (
                 <span className="absolute top-4 left-4 gradient-gold text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
-                  {product.badge}
+                  {badge}
                 </span>
               )}
-              {product.isNew && !product.badge && (
+              {product.isNew && !badge && (
                 <span className="absolute top-4 left-4 bg-black text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
                   NEW
                 </span>
@@ -211,9 +335,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Strip */}
-            {product.images.length > 1 && (
+            {images.length > 1 && (
               <div className="flex gap-3">
-                {product.images.map((img, idx) => (
+                {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
@@ -305,28 +429,30 @@ export default function ProductDetailPage() {
               {product.description}
             </motion.p>
 
-            {/* Color Selection */}
-            <motion.div variants={staggerItem} className="space-y-3">
-              <span className="text-sm font-medium">Color</span>
-              <div className="flex items-center gap-3">
-                {product.colors.map((color, idx) => (
-                  <motion.button
-                    key={color.name}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedColor(idx)}
-                    className={cn(
-                      'w-8 h-8 rounded-full cursor-pointer transition-all',
-                      idx === selectedColor
-                        ? 'ring-2 ring-offset-2 ring-foreground border-2 border-foreground'
-                        : 'border-2 border-transparent hover:border-foreground/20'
-                    )}
-                    style={{ backgroundColor: color.hex }}
-                    aria-label={`Select ${color.name}`}
-                    title={color.name}
-                  />
-                ))}
-              </div>
-            </motion.div>
+            {/* Color Selection (only if colors exist) */}
+            {colors.length > 0 && (
+              <motion.div variants={staggerItem} className="space-y-3">
+                <span className="text-sm font-medium">Color</span>
+                <div className="flex items-center gap-3">
+                  {colors.map((color, idx) => (
+                    <motion.button
+                      key={color.name}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setSelectedColor(idx)}
+                      className={cn(
+                        'w-8 h-8 rounded-full cursor-pointer transition-all',
+                        idx === selectedColor
+                          ? 'ring-2 ring-offset-2 ring-foreground border-2 border-foreground'
+                          : 'border-2 border-transparent hover:border-foreground/20'
+                      )}
+                      style={{ backgroundColor: color.hex }}
+                      aria-label={`Select ${color.name}`}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Size Selection */}
             <motion.div variants={staggerItem} className="space-y-3">
@@ -337,7 +463,7 @@ export default function ProductDetailPage() {
                 </button>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {product.sizes.map((size, idx) => (
+                {sizes.map((size, idx) => (
                   <motion.button
                     key={size}
                     whileTap={{ scale: 0.9 }}
@@ -396,7 +522,7 @@ export default function ProductDetailPage() {
                 {addedToCart ? (
                   <>
                     <Check className="w-4 h-4" />
-                    Added ✓
+                    Added
                   </>
                 ) : (
                   <>
@@ -467,7 +593,7 @@ export default function ProductDetailPage() {
                   id={rp.id}
                   name={rp.name}
                   price={rp.price}
-                  originalPrice={rp.originalPrice}
+                  originalPrice={rp.originalPrice || undefined}
                   image={rp.image}
                   rating={rp.rating}
                   reviewCount={rp.reviewCount}

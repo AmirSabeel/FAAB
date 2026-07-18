@@ -59,4 +59,31 @@ Work Log:
 Stage Summary:
 - New files: src/app/shop/page.tsx, src/app/api/products/route.ts
 - Modified files: src/components/navbar.tsx, src/components/mobile-nav.tsx, src/components/sections.tsx
-- All navbar and mobile nav links now functional, pointing to /shop with category filters
+- All navbar and mobile nav links now functional, pointing to /shop with category filters---
+Task ID: 1
+Agent: Main
+Task: Connect all storefront components to live stores and APIs
+
+Work Log:
+- Connected ProductCard wishlist button to useWishlistStore (was fake local state)
+- Connected ProductCard "Add to Cart" button to useCartStore (was fake local state)
+- Added toast notifications on cart/wishlist actions
+- Added auto-computed sale percentage badge from price/originalPrice
+- Rewrote SearchModal to use /api/products with 300ms debounce (was using static @/data/products)
+- Replaced button-based result clicks with Link components for SEO/faster navigation
+- Added loading spinner during search
+- Trending categories now link to /shop?search=... for live filtering
+- Created /api/products/[id] route for live product detail fetching
+- Created /api/products/related route for "You May Also Like" section
+- Rewrote /product/[id]/page.tsx to fetch from API first, fallback to static data
+- Added loading skeleton for product detail page
+- Connected QuickViewModal cart/wishlist to real stores
+- Added search query param support to /shop page
+- Cleaned up unused imports (useRouter, useCallback, Loader2, etc.)
+
+Stage Summary:
+- ProductCard, QuickViewModal, and Product Detail page now all write to real Zustand stores
+- Search is live against the database instead of static file
+- Product detail page tries API first, falls back to static data gracefully
+- Shop page supports /shop?search=... from search modal trending categories
+- Build passes clean with 0 errors, all 18 routes working

@@ -14,6 +14,9 @@ import {
   Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCartStore } from '@/components/cart-drawer';
+import { useWishlistStore } from '@/components/wishlist-store';
+import { toast } from 'sonner';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -156,16 +159,31 @@ function QuickViewPanel({
   const [selectedSize, setSelectedSize] = useState(2); // "M"
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
+
+  const addItem = useCartStore((s) => s.addItem);
+  const isWishlisted = useWishlistStore((s) => s.isInWishlist(product.id));
+  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
 
   const handleAddToCart = useCallback(() => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    });
     setAddedToCart(true);
+    toast.success('Added to cart', { description: product.name, duration: 2000 });
     setTimeout(() => setAddedToCart(false), 1500);
-  }, []);
+  }, [product, addItem]);
 
   const handleWishlist = useCallback(() => {
-    setWishlisted((prev) => !prev);
-  }, []);
+    toggleWishlist({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    });
+  }, [product, toggleWishlist]);
 
   const decrementQuantity = useCallback(() => {
     setQuantity((prev) => Math.max(1, prev - 1));
