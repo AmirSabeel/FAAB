@@ -19,3 +19,24 @@ Stage Summary:
 - New files: src/app/api/admin/settings/route.ts, src/components/admin/admin-settings.tsx
 - Modified files: prisma/schema.prisma, src/app/page.tsx
 - All admin sections: Dashboard, Products, Trending, New Arrivals, Orders, Customers, Analytics, Settings
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Build Checkout page with multi-step form and order placement
+
+Work Log:
+- Created /api/orders POST endpoint (creates Order + OrderItems, finds/creates Customer, generates order number, decreases stock)
+- Built /checkout/page.tsx with 3-step animated checkout: Information → Shipping → Payment
+- Payment methods: Cash on Delivery, UPI, Credit/Debit Card (radio selection)
+- Order summary sidebar with item list, quantity badges, subtotal/shipping/tax/total breakdown
+- Promo code input (UI ready), free shipping threshold indicator
+- Order confirmation screen with order number display
+- Indian states dropdown for shipping address
+- Connected cart drawer "Proceed to Checkout" button to navigate to /checkout
+- Verified clean production build (16 routes including /checkout and /api/orders)
+
+Stage Summary:
+- New files: src/app/checkout/page.tsx, src/app/api/orders/route.ts
+- Modified files: src/components/cart-drawer.tsx (added router + onClick navigation)
+- Full checkout flow: Cart → Checkout (3 steps) → Order Confirmation → orders appear in admin

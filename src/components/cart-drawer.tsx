@@ -6,6 +6,7 @@ import { persist } from 'zustand/middleware';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag, Lock } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -292,6 +293,7 @@ function EmptyCartState({ onClose }: { onClose: () => void }) {
 // ─── Cart Drawer (Main Component) ────────────────────────────────────────────
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const router = useRouter();
   const { items, removeItem, updateQuantity, totalItems, totalPrice } =
     useCartStore();
 
@@ -415,6 +417,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => { onClose(); router.push('/checkout'); }}
                   className={cn(
                     'w-full py-3.5 rounded-2xl gradient-gold',
                     'text-white font-medium text-sm btn-ripple',
