@@ -75,3 +75,13 @@ model OrderItem {
   size         String?
   color        String?
 }
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  group     String   @default("general")
+  label     String
+  type      String   @default("text")
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,679 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     5→import {
+     6→  Search,
+     7→  Plus,
+     8→  Pencil,
+     9→  Trash2,
+    10→  GripVertical,
+    11→  Sparkles,
+    12→  X,
+    13→  Eye,
+    14→  ArrowUpDown,
+    15→} from 'lucide-react'
+    16→import { motion, Reorder } from 'framer-motion'
+    17→import { Skeleton } from '@/components/ui/skeleton'
+    18→import { Input } from '@/components/ui/input'
+    19→import { Label } from '@/components/ui/label'
+    20→import { Textarea } from '@/components/ui/textarea'
+    21→import {
+    22→  Dialog,
+    23→  DialogContent,
+    24→  DialogHeader,
+    25→  DialogTitle,
+    26→} from '@/components/ui/dialog'
+    27→import {
+    28→  AlertDialog,
+    29→  AlertDialogAction,
+    30→  AlertDialogCancel,
+    31→  AlertDialogContent,
+    32→  AlertDialogDescription,
+    33→  AlertDialogFooter,
+    34→  AlertDialogHeader,
+    35→  AlertDialogTitle,
+    36→} from '@/components/ui/alert-dialog'
+    37→import { cn } from '@/lib/utils'
+    38→import { toast } from 'sonner'
+    39→import { ImageUpload } from '@/components/ui/image-upload'
+    40→
+    41→interface NewArrivalProduct {
+    42→  id: string
+    43→  name: string
+    44→  description: string | null
+    45→  price: number
+    46→  originalPrice: number | null
+    47→  image: string
+    48→  category: string
+    49→  rating: number
+    50→  reviewCount: number
+    51→  stock: number
+    52→  status: string
+    53→  isFeatured: boolean
+    54→  isNew: boolean
+    55→  isTrending: boolean
+    56→  newArrivalOrder: number
+    57→  createdAt: string
+    58→}
+    59→
+    60→interface AllProduct {
+    61→  id: string
+    62→  name: string
+    63→  price: number
+    64→  originalPrice: number | null
+    65→  image: string
+    66→  category: string
+    67→  newArrivalOrder: number
+    68→  rating: number
+    69→  reviewCount: number
+    70→}
+    71→
+    72→/* ─── Skeleton ─────────────────────────────────────────── */
+    73→function GridSkeleton() {
+    74→  return (
+    75→    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    76→      {Array.from({ length: 6 }).map((_, i) => (
+    77→        <div key={i} className="bg-card rounded-2xl border border-border/50 overflow-hidden">
+    78→          <Skeleton className="aspect-[4/3] w-full" />
+    79→          <div className="p-4 space-y-2">
+    80→            <Skeleton className="h-4 w-3/4" />
+    81→            <Skeleton className="h-3 w-1/2" />
+    82→            <Skeleton className="h-5 w-1/3" />
+    83→          </div>
+    84→        </div>
+    85→      ))}
+    86→    </div>
+    87→  )
+    88→}
+    89→
+    90→/* ─── Edit Form ────────────────────────────────────────── */
+    91→interface EditForm {
+    92→  name: string
+    93→  description: string
+    94→  price: string
+    95→  originalPrice: string
+    96→  image: string
+    97→  category: string
+    98→  rating: string
+    99→  reviewCount: string
+   100→}
+   101→
+   102→const CATEGORIES = [
+   103→  "Women's Fashion",
+   104→  "Men's Fashion",
+   105→  'Accessories',
+   106→  'Footwear',
+   107→  'Jewelry',
+   108→  'Watches',
+   109→]
+   110→
+   111→export function AdminNewArrivals() {
+   112→  const queryClient = useQueryClient()
+   113→
+   114→  // Fetch new arrival products
+   115→  const { data: products = [], isLoading } = useQuery<NewArrivalProduct[]>({
+   116→    queryKey: ['admin-new-arrivals'],
+   117→    queryFn: () => fetch('/api/admin/new-arrivals').then((r) => r.json()),
+   118→  })
+   119→
+   120→  // Edit modal state
+   121→  const [editingProduct, setEditingProduct] = useState<NewArrivalProduct | null>(null)
+   122→  const [editForm, setEditForm] = useState<EditForm>({
+   123→    name: '', description: '', price: '', originalPrice: '', image: '', category: '', rating: '', reviewCount: '',
+   124→  })
+   125→  const [editSaving, setEditSaving] = useState(false)
+   126→
+   127→  // Delete dialog
+   128→  const [deleteTarget, setDeleteTarget] = useState<NewArrivalProduct | null>(null)
+   129→  const [deleting, setDeleting] = useState(false)
+   130→
+   131→  // Add from catalog modal
+   132→  const [addModalOpen, setAddModalOpen] = useState(false)
+   133→  const [catalogSearch, setCatalogSearch] = useState('')
+   134→  const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState('')
+   135→
+   136→  useEffect(() => {
+   137→    const timer = setTimeout(() => setDebouncedCatalogSearch(catalogSearch), 300)
+   138→    return () => clearTimeout(timer)
+   139→  }, [catalogSearch])
+   140→
+   141→  // Fetch products not in new arrivals
+   142→  const { data: catalogProducts = [], isLoading: catalogLoading } = useQuery<AllProduct[]>({
+   143→    queryKey: ['admin-catalog-new-arrivals', debouncedCatalogSearch],
+   144→    queryFn: () =>
+   145→      fetch(
+   146→        `/api/admin/products?limit=50&status=active&search=${encodeURIComponent(debouncedCatalogSearch)}`
+   147→      )
+   148→        .then((r) => r.json())
+   149→        .then((data) => data.products || []),
+   150→    enabled: addModalOpen,
+   151→  })
+   152→
+   153→  // Image preview
+   154→  const [imgPreview, setImgPreview] = useState<string | null>(null)
+   155→
+   156→  // Reorder mutation
+   157→  const reorderMutation = useMutation({
+   158→    mutationFn: async (items: Array<{ id: string; newArrivalOrder: number }>) => {
+   159→      const res = await fetch('/api/admin/new-arrivals', {
+   160→        method: 'PUT',
+   161→        headers: { 'Content-Type': 'application/json' },
+   162→        body: JSON.stringify({ products: items }),
+   163→      })
+   164→      if (!res.ok) throw new Error('Failed to reorder')
+   165→      return res.json()
+   166→    },
+   167→    onSuccess: () => {
+   168→      queryClient.invalidateQueries({ queryKey: ['admin-new-arrivals'] })
+   169→    },
+   170→  })
+   171→
+   172→  // Edit mutation
+   173→  const editMutation = useMutation({
+   174→    mutationFn: async (body: Record<string, unknown>) => {
+   175→      const res = await fetch('/api/admin/products', {
+   176→        method: 'PUT',
+   177→        headers: { 'Content-Type': 'application/json' },
+   178→        body: JSON.stringify(body),
+   179→      })
+   180→      if (!res.ok) throw new Error('Failed to update')
+   181→      return res.json()
+   182→    },
+   183→    onSuccess: () => {
+   184→      queryClient.invalidateQueries({ queryKey: ['admin-new-arrivals'] })
+   185→      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+   186→      toast.success('Product updated')
+   187→      setEditingProduct(null)
+   188→    },
+   189→    onError: () => toast.error('Failed to update product'),
+   190→  })
+   191→
+   192→  // Delete (remove from new arrivals) mutation
+   193→  const deleteMutation = useMutation({
+   194→    mutationFn: async (id: string) => {
+   195→      const res = await fetch(`/api/admin/new-arrivals?id=${id}`, { method: 'DELETE' })
+   196→      if (!res.ok) throw new Error('Failed to remove')
+   197→      return res.json()
+   198→    },
+   199→    onSuccess: () => {
+   200→      queryClient.invalidateQueries({ queryKey: ['admin-new-arrivals'] })
+   201→      toast.success('Removed from New Arrivals')
+   202→      setDeleteTarget(null)
+   203→    },
+   204→    onError: () => toast.error('Failed to remove'),
+   205→  })
+   206→
+   207→  // Add to new arrivals mutation
+   208→  const addMutation = useMutation({
+   209→    mutationFn: async (id: string) => {
+   210→      const res = await fetch('/api/admin/new-arrivals', {
+   211→        method: 'PATCH',
+   212→        headers: { 'Content-Type': 'application/json' },
+   213→        body: JSON.stringify({ id, isNewArrival: true }),
+   214→      })
+   215→      if (!res.ok) throw new Error('Failed to add')
+   216→      return res.json()
+   217→    },
+   218→    onSuccess: () => {
+   219→      queryClient.invalidateQueries({ queryKey: ['admin-new-arrivals'] })
+   220→      queryClient.invalidateQueries({ queryKey: ['admin-catalog-new-arrivals'] })
+   221→      toast.success('Added to New Arrivals')
+   222→    },
+   223→    onError: () => toast.error('Failed to add'),
+   224→  })
+   225→
+   226→  // Handlers
+   227→  const handleReorder = useCallback(
+   228→    (reordered: NewArrivalProduct[]) => {
+   229→      const items = reordered.map((p, idx) => ({ id: p.id, newArrivalOrder: idx + 1 }))
+   230→      reorderMutation.mutate(items)
+   231→    },
+   232→    [reorderMutation]
+   233→  )
+   234→
+   235→  function openEditModal(product: NewArrivalProduct) {
+   236→    setEditingProduct(product)
+   237→    setEditForm({
+   238→      name: product.name,
+   239→      description: product.description || '',
+   240→      price: String(product.price),
+   241→      originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+   242→      image: product.image,
+   243→      category: product.category,
+   244→      rating: String(product.rating),
+   245→      reviewCount: String(product.reviewCount),
+   246→    })
+   247→  }
+   248→
+   249→  async function handleEditSave() {
+   250→    if (!editingProduct || !editForm.name.trim() || !editForm.price) {
+   251→      toast.error('Name and price are required')
+   252→      return
+   253→    }
+   254→    setEditSaving(true)
+   255→    await editMutation.mutateAsync({
+   256→      id: editingProduct.id,
+   257→      name: editForm.name.trim(),
+   258→      description: editForm.description.trim() || null,
+   259→      price: parseFloat(editForm.price),
+   260→      originalPrice: editForm.originalPrice ? parseFloat(editForm.originalPrice) : null,
+   261→      image: editForm.image.trim() || editingProduct.image,
+   262→      category: editForm.category,
+   263→      rating: parseFloat(editForm.rating) || 4.5,
+   264→      reviewCount: parseInt(editForm.reviewCount) || 0,
+   265→    })
+   266→    setEditSaving(false)
+   267→  }
+   268→
+   269→  async function handleDelete() {
+   270→    if (!deleteTarget) return
+   271→    setDeleting(true)
+   272→    await deleteMutation.mutateAsync(deleteTarget.id)
+   273→    setDeleting(false)
+   274→  }
+   275→
+   276→  const nonArrivalCatalog = catalogProducts.filter((p) => !p.newArrivalOrder)
+   277→
+   278→  return (
+   279→    <div>
+   280→      {/* Top Bar */}
+   281→      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+   282→        <div>
+   283→          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+   284→            <Sparkles className="w-6 h-6 text-gold" />
+   285→            New Arrivals
+   286→          </h1>
+   287→          <p className="text-sm text-muted-foreground mt-1">
+   288→            {products.length} product{products.length !== 1 ? 's' : ''} in the New Arrivals section
+   289→          </p>
+   290→        </div>
+   291→        <button
+   292→          onClick={() => setAddModalOpen(true)}
+   293→          className="h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 shrink-0 cursor-pointer"
+   294→        >
+   295→          <Plus className="w-4 h-4" />
+   296→          Add Products
+   297→        </button>
+   298→      </div>
+   299→
+   300→      {/* Reorder Hint */}
+   301→      {products.length > 0 && (
+   302→        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4 bg-muted/40 rounded-xl px-4 py-2.5 border border-border/30">
+   303→          <ArrowUpDown className="w-3.5 h-3.5 shrink-0" />
+   304→          <span>Drag and drop to reorder. Products appear in a horizontal carousel on the storefront.</span>
+   305→        </div>
+   306→      )}
+   307→
+   308→      {/* Grid */}
+   309→      {isLoading ? (
+   310→        <GridSkeleton />
+   311→      ) : products.length === 0 ? (
+   312→        <div className="flex flex-col items-center justify-center py-24 text-center">
+   313→          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+   314→            <Sparkles className="w-10 h-10 text-muted-foreground/40" />
+   315→          </div>
+   316→          <h3 className="text-lg font-medium mb-1">No new arrivals yet</h3>
+   317→          <p className="text-sm text-muted-foreground max-w-sm">
+   318→            Add products from your catalog to feature them in the &quot;New Arrivals&quot; carousel on the homepage.
+   319→          </p>
+   320→          <button
+   321→            onClick={() => setAddModalOpen(true)}
+   322→            className="mt-6 h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 cursor-pointer"
+   323→          >
+   324→            <Plus className="w-4 h-4" />
+   325→            Add Products
+   326→          </button>
+   327→        </div>
+   328→      ) : (
+   329→        <Reorder.Group
+   330→          axis="y"
+   331→          values={products}
+   332→          onReorder={handleReorder}
+   333→          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+   334→          layoutScroll
+   335→        >
+   336→          {products.map((product, idx) => (
+   337→            <Reorder.Item
+   338→              key={product.id}
+   339→              value={product}
+   340→              className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-luxury-sm hover:shadow-luxury transition-shadow group"
+   341→              whileDrag={{ scale: 1.03, boxShadow: '0 20px 40px rgba(0,0,0,0.15)', zIndex: 50 }}
+   342→            >
+   343→              <div className="aspect-[4/3] overflow-hidden relative">
+   344→                <img
+   345→                  src={product.image}
+   346→                  alt={product.name}
+   347→                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+   348→                />
+   349→
+   350→                {/* Drag Handle + Order Badge */}
+   351→                <div className="absolute top-3 left-3 flex items-center gap-2">
+   352→                  <div className="w-7 h-7 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing">
+   353→                    <GripVertical className="w-3.5 h-3.5 text-white" />
+   354→                  </div>
+   355→                  <span className="text-[11px] font-bold text-white bg-emerald-500/90 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+   356→                    #{idx + 1}
+   357→                  </span>
+   358→                </div>
+   359→
+   360→                {/* Action Buttons */}
+   361→                <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+   362→                  <button
+   363→                    onClick={() => setImgPreview(product.image)}
+   364→                    className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   365→                    title="Preview image"
+   366→                  >
+   367→                    <Eye className="w-3.5 h-3.5" />
+   368→                  </button>
+   369→                  <button
+   370→                    onClick={() => openEditModal(product)}
+   371→                    className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   372→                    title="Edit product"
+   373→                  >
+   374→                    <Pencil className="w-3.5 h-3.5" />
+   375→                  </button>
+   376→                  <button
+   377→                    onClick={() => setDeleteTarget(product)}
+   378→                    className="w-8 h-8 rounded-lg bg-red-500/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-600 transition-colors cursor-pointer"
+   379→                    title="Remove from New Arrivals"
+   380→                  >
+   381→                    <Trash2 className="w-3.5 h-3.5" />
+   382→                  </button>
+   383→                </div>
+   384→
+   385→                {/* NEW Badge */}
+   386→                <span className="absolute bottom-3 left-3 bg-black text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">
+   387→                  NEW
+   388→                </span>
+   389→              </div>
+   390→
+   391→              <div className="p-4 space-y-2">
+   392→                <div className="flex items-start justify-between gap-2">
+   393→                  <h3 className="text-sm font-medium line-clamp-1 flex-1">{product.name}</h3>
+   394→                </div>
+   395→                <p className="text-xs text-muted-foreground">{product.category}</p>
+   396→                <div className="flex items-center gap-2">
+   397→                  <span className="text-base font-semibold">
+   398→                    ₹{product.price.toLocaleString('en-IN')}
+   399→                  </span>
+   400→                  {product.originalPrice && product.originalPrice > product.price && (
+   401→                    <span className="text-xs text-muted-foreground line-through">
+   402→                      ₹{product.originalPrice.toLocaleString('en-IN')}
+   403→                    </span>
+   404→                  )}
+   405→                </div>
+   406→                <div className="flex items-center justify-between pt-1">
+   407→                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+   408→                    <span className="text-gold">★</span>
+   409→                    <span>{product.rating}</span>
+   410→                    <span>({product.reviewCount})</span>
+   411→                  </div>
+   412→                  <span className="text-xs text-muted-foreground">
+   413→                    Stock: <span className={cn(
+   414→                      product.stock > 20 ? 'text-green-600 dark:text-green-400' :
+   415→                      product.stock >= 5 ? 'text-amber-600 dark:text-amber-400' :
+   416→                      'text-red-600 dark:text-red-400',
+   417→                      'font-medium'
+   418→                    )}>{product.stock}</span>
+   419→                  </span>
+   420→                </div>
+   421→              </div>
+   422→            </Reorder.Item>
+   423→          ))}
+   424→        </Reorder.Group>
+   425→      )}
+   426→
+   427→      {/* ─── Add From Catalog Modal ──────────────────────── */}
+   428→      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+   429→        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-2xl w-full border border-border/50 max-h-[80vh] flex flex-col">
+   430→          <DialogHeader>
+   431→            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+   432→              <Plus className="w-5 h-5 text-gold" />
+   433→              Add Products to New Arrivals
+   434→            </DialogTitle>
+   435→          </DialogHeader>
+   436→
+   437→          <div className="relative mt-2">
+   438→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   439→            <Input
+   440→              placeholder="Search products by name..."
+   441→              value={catalogSearch}
+   442→              onChange={(e) => setCatalogSearch(e.target.value)}
+   443→              className="rounded-xl pl-10"
+   444→            />
+   445→          </div>
+   446→
+   447→          <div className="flex-1 overflow-y-auto mt-3 space-y-2 pr-1">
+   448→            {catalogLoading ? (
+   449→              <div className="space-y-2">
+   450→                {Array.from({ length: 4 }).map((_, i) => (
+   451→                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
+   452→                ))}
+   453→              </div>
+   454→            ) : nonArrivalCatalog.length === 0 ? (
+   455→              <div className="text-center py-12 text-sm text-muted-foreground">
+   456→                {catalogSearch ? 'No matching products found' : 'All products are already in New Arrivals'}
+   457→              </div>
+   458→            ) : (
+   459→              nonArrivalCatalog.map((product) => (
+   460→                <div
+   461→                  key={product.id}
+   462→                  className="flex items-center gap-3 p-3 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors"
+   463→                >
+   464→                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-muted shrink-0">
+   465→                    <img
+   466→                      src={product.image}
+   467→                      alt={product.name}
+   468→                      className="w-full h-full object-cover"
+   469→                    />
+   470→                  </div>
+   471→                  <div className="flex-1 min-w-0">
+   472→                    <p className="text-sm font-medium truncate">{product.name}</p>
+   473→                    <p className="text-xs text-muted-foreground">
+   474→                      {product.category} · ₹{product.price.toLocaleString('en-IN')}
+   475→                    </p>
+   476→                  </div>
+   477→                  <button
+   478→                    onClick={() => addMutation.mutate(product.id)}
+   479→                    disabled={addMutation.isPending}
+   480→                    className="h-8 px-3 rounded-lg gradient-gold text-white text-xs font-medium flex items-center gap-1.5 shrink-0 cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50"
+   481→                  >
+   482→                    <Plus className="w-3.5 h-3.5" />
+   483→                    Add
+   484→                  </button>
+   485→                </div>
+   486→              ))
+   487→            )}
+   488→          </div>
+   489→        </DialogContent>
+   490→      </Dialog>
+   491→
+   492→      {/* ─── Edit Product Modal ──────────────────────────── */}
+   493→      <Dialog
+   494→        open={!!editingProduct}
+   495→        onOpenChange={(open) => !open && setEditingProduct(null)}
+   496→      >
+   497→        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-lg w-full border border-border/50">
+   498→          <DialogHeader>
+   499→            <DialogTitle className="text-lg font-semibold">Edit New Arrival Product</DialogTitle>
+   500→          </DialogHeader>
+   501→
+   502→          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
+   503→            {/* Image Upload */}
+   504→            <ImageUpload
+   505→              value={editForm.image}
+   506→              onChange={(url) => setEditForm({ ...editForm, image: url })}
+   507→              label="Product Image"
+   508→            />
+   509→
+   510→            {/* Name */}
+   511→            <div className="space-y-2">
+   512→              <Label className="text-sm font-medium">
+   513→                Name <span className="text-red-500">*</span>
+   514→              </Label>
+   515→              <Input
+   516→                placeholder="Product name"
+   517→                value={editForm.name}
+   518→                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+   519→                className="rounded-xl"
+   520→              />
+   521→            </div>
+   522→
+   523→            {/* Description */}
+   524→            <div className="space-y-2">
+   525→              <Label className="text-sm font-medium">Description</Label>
+   526→              <Textarea
+   527→                placeholder="Product description..."
+   528→                value={editForm.description}
+   529→                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+   530→                rows={2}
+   531→                className="rounded-xl resize-none"
+   532→              />
+   533→            </div>
+   534→
+   535→            {/* Price Row */}
+   536→            <div className="grid grid-cols-2 gap-4">
+   537→              <div className="space-y-2">
+   538→                <Label className="text-sm font-medium">
+   539→                  Price (₹) <span className="text-red-500">*</span>
+   540→                </Label>
+   541→                <Input
+   542→                  type="number"
+   543→                  step="0.01"
+   544→                  min="0"
+   545→                  placeholder="0.00"
+   546→                  value={editForm.price}
+   547→                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+   548→                  className="rounded-xl"
+   549→                />
+   550→              </div>
+   551→              <div className="space-y-2">
+   552→                <Label className="text-sm font-medium">Original Price (₹)</Label>
+   553→                <Input
+   554→                  type="number"
+   555→                  step="0.01"
+   556→                  min="0"
+   557→                  placeholder="0.00"
+   558→                  value={editForm.originalPrice}
+   559→                  onChange={(e) => setEditForm({ ...editForm, originalPrice: e.target.value })}
+   560→                  className="rounded-xl"
+   561→                />
+   562→              </div>
+   563→            </div>
+   564→
+   565→            {/* Category + Rating */}
+   566→            <div className="grid grid-cols-2 gap-4">
+   567→              <div className="space-y-2">
+   568→                <Label className="text-sm font-medium">Category</Label>
+   569→                <select
+   570→                  value={editForm.category}
+   571→                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+   572→                  className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all cursor-pointer"
+   573→                >
+   574→                  {CATEGORIES.map((c) => (
+   575→                    <option key={c} value={c}>{c}</option>
+   576→                  ))}
+   577→                </select>
+   578→              </div>
+   579→              <div className="space-y-2">
+   580→                <Label className="text-sm font-medium">Rating</Label>
+   581→                <Input
+   582→                  type="number"
+   583→                  step="0.1"
+   584→                  min="0"
+   585→                  max="5"
+   586→                  placeholder="4.5"
+   587→                  value={editForm.rating}
+   588→                  onChange={(e) => setEditForm({ ...editForm, rating: e.target.value })}
+   589→                  className="rounded-xl"
+   590→                />
+   591→              </div>
+   592→            </div>
+   593→
+   594→            {/* Review Count */}
+   595→            <div className="space-y-2">
+   596→              <Label className="text-sm font-medium">Review Count</Label>
+   597→              <Input
+   598→                type="number"
+   599→                min="0"
+   600→                placeholder="0"
+   601→                value={editForm.reviewCount}
+   602→                onChange={(e) => setEditForm({ ...editForm, reviewCount: e.target.value })}
+   603→                className="rounded-xl"
+   604→              />
+   605→            </div>
+   606→          </div>
+   607→
+   608→          {/* Buttons */}
+   609→          <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border/50">
+   610→            <button
+   611→              onClick={() => setEditingProduct(null)}
+   612→              className="h-10 px-5 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors cursor-pointer"
+   613→            >
+   614→              Cancel
+   615→            </button>
+   616→            <button
+   617→              onClick={handleEditSave}
+   618→              disabled={editSaving || !editForm.name.trim() || !editForm.price}
+   619→              className="h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+   620→            >
+   621→              {editSaving ? 'Saving...' : 'Update Product'}
+   622→            </button>
+   623→          </div>
+   624→        </DialogContent>
+   625→      </Dialog>
+   626→
+   627→      {/* ─── Delete Confirmation ────────────────────────── */}
+   628→      <AlertDialog
+   629→        open={!!deleteTarget}
+   630→        onOpenChange={(open) => !open && setDeleteTarget(null)}
+   631→      >
+   632→        <AlertDialogContent className="bg-card rounded-3xl p-6 border border-border/50 max-w-sm">
+   633→          <AlertDialogHeader>
+   634→            <AlertDialogTitle>Remove from New Arrivals?</AlertDialogTitle>
+   635→            <AlertDialogDescription>
+   636→              This will remove &quot;{deleteTarget?.name}&quot; from the New Arrivals carousel. The product itself will not be deleted.
+   637→            </AlertDialogDescription>
+   638→          </AlertDialogHeader>
+   639→          <AlertDialogFooter className="mt-4">
+   640→            <AlertDialogCancel disabled={deleting} className="rounded-xl cursor-pointer">
+   641→              Cancel
+   642→            </AlertDialogCancel>
+   643→            <AlertDialogAction
+   644→              onClick={handleDelete}
+   645→              disabled={deleting}
+   646→              className="rounded-xl bg-red-600 text-white hover:bg-red-700 focus:ring-red-600 cursor-pointer"
+   647→            >
+   648→              {deleting ? 'Removing...' : 'Remove'}
+   649→            </AlertDialogAction>
+   650→          </AlertDialogFooter>
+   651→        </AlertDialogContent>
+   652→      </AlertDialog>
+   653→
+   654→      {/* ─── Full Image Preview ─────────────────────────── */}
+   655→      <Dialog open={!!imgPreview} onOpenChange={(open) => !open && setImgPreview(null)}>
+   656→        <DialogContent className="bg-black/95 rounded-3xl p-2 max-w-3xl w-full border-border/20">
+   657→          <DialogHeader className="sr-only">
+   658→            <DialogTitle>Image Preview</DialogTitle>
+   659→          </DialogHeader>
+   660→          <div className="relative">
+   661→            <button
+   662→              onClick={() => setImgPreview(null)}
+   663→              className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors cursor-pointer"
+   664→            >
+   665→              <X className="w-4 h-4" />
+   666→            </button>
+   667→            {imgPreview && (
+   668→              <img
+   669→                src={imgPreview}
+   670→                alt="Preview"
+   671→                className="w-full rounded-2xl object-contain max-h-[70vh]"
+   672→              />
+   673→            )}
+   674→          </div>
+   675→        </DialogContent>
+   676→      </Dialog>
+   677→    </div>
+   678→  )
+   679→}

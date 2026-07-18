@@ -9,6 +9,7 @@ import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminCustomers } from '@/components/admin/admin-customers'
 import { AdminAnalytics } from '@/components/admin/admin-analytics'
+import { AdminSettings } from '@/components/admin/admin-settings'
 import { AdminTrending } from '@/components/admin/admin-trending'
 import { AdminNewArrivals } from '@/components/admin/admin-new-arrivals'
 import { useAdminStore } from '@/components/admin/admin-store'
@@ -23,7 +24,7 @@ import { PageLoader } from '@/components/page-loader'
 import { CartDrawer, useCartStore } from '@/components/cart-drawer'
 import QuickViewModal from '@/components/quick-view-modal'
 import { WishlistDrawer } from '@/components/wishlist-drawer'
-import { ShoppingBag, ShieldCheck } from 'lucide-react'
+import { ShoppingBag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
@@ -98,13 +99,7 @@ export default function Home() {
               {activeTab === 'orders' && <AdminOrders />}
               {activeTab === 'customers' && <AdminCustomers />}
               {activeTab === 'analytics' && <AdminAnalytics />}
-              {activeTab === 'settings' && (
-                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                  <ShieldCheck className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                  <h2 className="text-xl font-semibold">Settings</h2>
-                  <p className="text-muted-foreground mt-2">Store settings and configuration coming soon.</p>
-                </div>
-              )}
+              {activeTab === 'settings' && <AdminSettings />}
             </motion.div>
           </AnimatePresence>
         </AdminLayout>
