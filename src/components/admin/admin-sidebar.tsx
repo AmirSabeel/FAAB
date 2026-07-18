@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ArrowLeft,
   Menu,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -39,6 +40,7 @@ interface AdminSidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", tab: "dashboard" },
+  { icon: Home, label: "Homepage", tab: "homepage" },
   { icon: Package, label: "Products", tab: "products" },
   { icon: TrendingUp, label: "Trending", tab: "trending" },
   { icon: Sparkles, label: "New Arrivals", tab: "new-arrivals" },

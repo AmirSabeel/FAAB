@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
+import { AdminHomepage } from '@/components/admin/admin-homepage'
 import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminCustomers } from '@/components/admin/admin-customers'
@@ -90,6 +91,7 @@ export default function Home() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
               {activeTab === 'dashboard' && <AdminDashboard />}
+              {activeTab === 'homepage' && <AdminHomepage />}
               {activeTab === 'products' && <AdminProducts />}
               {activeTab === 'trending' && <AdminTrending />}
               {activeTab === 'new-arrivals' && <AdminNewArrivals />}

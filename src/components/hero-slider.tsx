@@ -8,15 +8,16 @@ import { cn } from '@/lib/utils'
 // ─── Slide Data ───────────────────────────────────────────────────────────────
 
 interface Slide {
-  id: number
+  id: number | string
   image: string
   title: string
   subtitle: string
   ctaText: string
   ctaLink: string
+  isActive?: boolean
 }
 
-const slides: Slide[] = [
+const FALLBACK_SLIDES: Slide[] = [
   {
     id: 1,
     image:
@@ -48,6 +49,21 @@ const slides: Slide[] = [
     ctaLink: '/collections/trending',
   },
 ]
+
+// ─── API Fetch Hook ──────────────────────────────────────────────────────────
+
+function useSlides() {
+  const [slides, setSlides] = useState<Slide[]>(FALLBACK_SLIDES)
+  useEffect(() => {
+    fetch('/api/homepage/slides')
+      .then(r => r.json())
+      .then((data: Slide[]) => {
+        if (Array.isArray(data) && data.length > 0) setSlides(data)
+      })
+      .catch(() => { /* use fallback */ })
+  }, [])
+  return slides
+}
 
 // ─── Animation Variants ───────────────────────────────────────────────────────
 
@@ -119,6 +135,7 @@ export default function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
   const [heroHeight, setHeroHeight] = useState(0)
+  const slides = useSlides()
 
   const touchStartX = useRef<number | null>(null)
   const touchEndX = useRef<number | null>(null)

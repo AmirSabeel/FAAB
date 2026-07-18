@@ -93,50 +93,31 @@ function SectionHeading({
    1. CategoriesSection
    ============================================================ */
 
-const categories = [
-  {
-    name: "Women's Fashion",
-    image:
-      'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: "Men's Fashion",
-    image:
-      'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Accessories',
-    image:
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Footwear',
-    image:
-      'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Bags',
-    image:
-      'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Watches',
-    image:
-      'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Jewelry',
-    image:
-      'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    name: 'Beauty',
-    image:
-      'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&q=80',
-  },
+interface CategoryData { id: string; name: string; image: string; link: string }
+
+const FALLBACK_CATEGORIES: CategoryData[] = [
+  { name: "Women's Fashion", image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop&q=80', link: "/shop?category=Women's Fashion" },
+  { name: "Men's Fashion", image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&h=400&fit=crop&q=80', link: "/shop?category=Men's Fashion" },
+  { name: 'Accessories', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&q=80', link: '/shop?category=Accessories' },
+  { name: 'Footwear', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop&q=80', link: '/shop?category=Footwear' },
+  { name: 'Bags', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=400&fit=crop&q=80', link: '/shop?category=Accessories' },
+  { name: 'Watches', image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80', link: '/shop?category=Watches' },
+  { name: 'Jewelry', image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=400&h=400&fit=crop&q=80', link: '/shop?category=Jewelry' },
+  { name: 'Beauty', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&q=80', link: "/shop?category=Women's Fashion" },
 ];
 
 export function CategoriesSection() {
+  const [categories, setCategories] = useState<CategoryData[]>(FALLBACK_CATEGORIES)
+
+  useEffect(() => {
+    fetch('/api/homepage/categories')
+      .then(r => r.json())
+      .then((data: CategoryData[]) => {
+        if (Array.isArray(data) && data.length > 0) setCategories(data)
+      })
+      .catch(() => { /* use fallback */ })
+  }, [])
+
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
@@ -146,8 +127,8 @@ export function CategoriesSection() {
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
             {categories.map((cat, idx) => (
               <motion.a
-                key={cat.name}
-                href={`/shop?category=${encodeURIComponent(cat.name === 'Bags' ? 'Accessories' : cat.name === 'Beauty' ? "Women's Fashion" : cat.name)}`}
+                key={cat.id || cat.name}
+                href={cat.link || `/shop?category=${encodeURIComponent(cat.name)}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -180,28 +161,26 @@ export function CategoriesSection() {
    2. FeaturedCollections
    ============================================================ */
 
-const collections = [
-  {
-    name: 'Summer Essentials',
-    items: 12,
-    image:
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80',
-  },
-  {
-    name: 'Evening Wear',
-    items: 8,
-    image:
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1000&fit=crop&q=80',
-  },
-  {
-    name: 'Minimal Edit',
-    items: 15,
-    image:
-      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop&q=80',
-  },
+interface CollectionData { id: string; name: string; image: string; itemCount: number; link: string }
+
+const FALLBACK_COLLECTIONS: CollectionData[] = [
+  { name: 'Summer Essentials', itemCount: 12, image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80', link: '/shop' },
+  { name: 'Evening Wear', itemCount: 8, image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1000&fit=crop&q=80', link: '/shop' },
+  { name: 'Minimal Edit', itemCount: 15, image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop&q=80', link: '/shop' },
 ];
 
 export function FeaturedCollections() {
+  const [collections, setCollections] = useState<CollectionData[]>(FALLBACK_COLLECTIONS)
+
+  useEffect(() => {
+    fetch('/api/homepage/collections')
+      .then(r => r.json())
+      .then((data: CollectionData[]) => {
+        if (Array.isArray(data) && data.length > 0) setCollections(data)
+      })
+      .catch(() => { /* use fallback */ })
+  }, [])
+
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
@@ -212,7 +191,7 @@ export function FeaturedCollections() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {collections.map((col, idx) => (
-            <ScrollReveal key={col.name} delay={idx * 0.12}>
+            <ScrollReveal key={col.id || col.name} delay={idx * 0.12}>
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -237,7 +216,7 @@ export function FeaturedCollections() {
 
                 <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
                   <p className="text-white/70 text-sm mb-1">
-                    {col.items} items
+                    {col.itemCount} items
                   </p>
                   <h3 className="text-2xl md:text-3xl font-semibold text-white mb-4">
                     {col.name}
