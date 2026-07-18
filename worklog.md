@@ -137,3 +137,34 @@ Stage Summary:
 - Created /orders page with full order tracking UI
 - Checkout confirmation now links to order tracking
 - Completes the purchase-to-delivery flow
+
+---
+Task ID: 4
+Agent: Main
+Task: Build dedicated Wishlist page (/wishlist) + enhance wishlist experience
+
+Work Log:
+- Created /wishlist/page.tsx — full-page wishlist with:
+  - Responsive product grid (2/3/4 columns)
+  - Sort options: Recently Added, Price Low→High, Price High→Low
+  - "Add to Bag" button on each item (connected to useCartStore)
+  - Remove item with animated exit
+  - Share wishlist (native Web Share API with clipboard fallback)
+  - Clear All with confirmation toast
+  - Total wishlist value display
+  - "Add All to Bag" bulk action
+  - Beautiful empty state with animated heart and CTA
+  - Loading skeleton for hydration
+  - Sticky header with back link, item count, share/clear buttons
+- Fixed WishlistDrawer "Move to Bag" — was a console.log placeholder, now adds to real cart store and removes from wishlist
+- Changed WishlistDrawer footer from "Continue Shopping" to "View All Wishlist" linking to /wishlist
+- Added wishlist count badge to navbar heart icon (animated gold dot, same style as cart badge)
+- Updated BottomNavBar: Wishlist tab now navigates to /wishlist page with Link component + count badge
+- Added `setItems` method to useWishlistStore for clear-all functionality
+- Passed onSearchClick/onCartClick props to BottomNavBar in home page
+- Verified clean production build (22 routes, 0 errors)
+
+Stage Summary:
+- New file: src/app/wishlist/page.tsx
+- Modified files: wishlist-store.ts (added setItems), wishlist-drawer.tsx (real Move to Bag, View All link), navbar.tsx (wishlist badge), mobile-nav.tsx (Link to /wishlist, props), page.tsx (BottomNavBar props)
+- Complete wishlist experience: heart icon on product → drawer preview → full page management → add to cart

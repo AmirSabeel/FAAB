@@ -15,6 +15,7 @@ interface WishlistStore {
   items: WishlistItem[];
   addItem: (item: Omit<WishlistItem, 'addedAt'>) => void;
   removeItem: (id: string) => void;
+  setItems: (items: WishlistItem[]) => void;
   toggleItem: (item: Omit<WishlistItem, 'addedAt'>) => void;
   isInWishlist: (id: string) => boolean;
   itemCount: () => number;
@@ -37,6 +38,10 @@ export const useWishlistStore = create<WishlistStore>()(
 
       removeItem: (id) => {
         set({ items: get().items.filter((i) => i.id !== id) });
+      },
+
+      setItems: (newItems) => {
+        set({ items: newItems });
       },
 
       toggleItem: (item) => {

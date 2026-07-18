@@ -14,7 +14,9 @@ import {
   Moon,
   LayoutGrid,
 } from 'lucide-react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { useWishlistStore } from '@/components/wishlist-store'
 
 /* ================================================================
    useMobileNav — Custom hook for mobile navigation drawer state
@@ -214,8 +216,21 @@ export function MobileNavDrawer({ isOpen, onClose, onAdminClick }: MobileNavDraw
    BottomNavBar — Fixed bottom tab bar (mobile only)
    ================================================================ */
 
-export function BottomNavBar() {
+interface BottomNavBarProps {
+  onSearchClick?: () => void
+  onCartClick?: () => void
+}
+
+export function BottomNavBar({ onSearchClick, onCartClick }: BottomNavBarProps) {
   const [activeKey, setActiveKey] = useState<string>('home')
+  const wishlistCount = useWishlistStore((s) => s.items.length)
+
+  function handleTabClick(key: string) {
+    setActiveKey(key)
+    if (key === 'home') return
+    if (key === 'search') { onSearchClick?.(); return }
+    if (key === 'cart') { onCartClick?.(); return }
+  }
 
   return (
     <nav
@@ -231,13 +246,42 @@ export function BottomNavBar() {
           const isActive = activeKey === item.key
           const Icon = item.icon
 
+          // Wishlist navigates to /wishlist page
+          if (item.key === 'wishlist') {
+            return (
+              <Link
+                key={item.key}
+                href="/wishlist"
+                aria-label={item.label}
+                className={cn(
+                  'relative flex flex-col items-center justify-center gap-0.5',
+                  'w-16 h-12 rounded-xl',
+                  'transition-colors duration-200',
+                )}
+              >
+                <span className="flex items-center justify-center">
+                  <Icon className="w-5 h-5" strokeWidth={1.8} />
+                </span>
+                <span className="text-[10px] leading-none font-medium tracking-wide text-muted-foreground">
+                  {item.label}
+                </span>
+                {/* Wishlist count badge */}
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0.5 right-1 w-4 h-4 min-w-[16px] rounded-full gradient-gold text-white text-[8px] font-bold flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+            )
+          }
+
           return (
             <button
               key={item.key}
               role="tab"
               aria-selected={isActive}
               aria-label={item.label}
-              onClick={() => setActiveKey(item.key)}
+              onClick={() => handleTabClick(item.key)}
               className={cn(
                 'relative flex flex-col items-center justify-center gap-0.5',
                 'w-16 h-12 rounded-xl',

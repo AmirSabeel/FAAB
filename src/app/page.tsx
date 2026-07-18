@@ -146,7 +146,7 @@ export default function Home() {
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FAQSection /></section>
       </main>
       <Footer />
-      <BottomNavBar />
+      <BottomNavBar onSearchClick={() => setSearchOpen(true)} onCartClick={() => setCartOpen(true)} />
       <BackToTop />
       <WhatsAppButton />
     </QueryClientProvider>

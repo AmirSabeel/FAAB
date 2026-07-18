@@ -3,9 +3,11 @@
 import { useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, ArrowRight } from 'lucide-react';
+import { X, Heart, ArrowRight, ShoppingBag } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useWishlistStore } from '@/components/wishlist-store';
+import { useCartStore } from '@/components/cart-drawer';
 
 interface WishlistDrawerProps {
   isOpen: boolean;
@@ -102,6 +104,7 @@ const emptyVariants = {
 export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
   const items = useWishlistStore((s) => s.items);
   const removeItem = useWishlistStore((s) => s.removeItem);
+  const cartAddItem = useCartStore((s) => s.addItem);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -143,10 +146,10 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
   );
 
   const handleMoveToBag = useCallback((item: typeof items[number]) => {
-    // Placeholder: in production, this would add to cart store
-    // For now we just log it
-    console.log('Move to bag:', item.name);
-  }, []);
+    cartAddItem({ id: item.id, name: item.name, price: item.price, image: item.image });
+    removeItem(item.id);
+    toast.success('Moved to bag', { description: item.name, duration: 2000 });
+  }, [cartAddItem, removeItem]);
 
   return (
     <AnimatePresence>
@@ -324,7 +327,8 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                 transition={{ delay: 0.2, duration: 0.3 }}
                 className="border-t border-border p-6 safe-bottom shrink-0"
               >
-                <button
+                <a
+                  href="/wishlist"
                   onClick={onClose}
                   className={cn(
                     'w-full flex items-center justify-center gap-2',
@@ -333,13 +337,12 @@ export function WishlistDrawer({ isOpen, onClose }: WishlistDrawerProps) {
                     'bg-foreground text-background',
                     'hover:bg-gold hover:text-white',
                     'transition-colors duration-300',
-                    'btn-ripple',
-                    'cursor-pointer'
+                    'btn-ripple'
                   )}
                 >
-                  Continue Shopping
+                  View All Wishlist
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </a>
               </motion.div>
             )}
           </motion.div>

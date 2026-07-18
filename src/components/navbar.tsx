@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes'
 import { Sun, Moon, Search, Heart, ShoppingBag, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/components/cart-drawer'
+import { useWishlistStore } from '@/components/wishlist-store'
 
 const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
 
@@ -37,6 +38,7 @@ function useHydrated() {
 export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const cartCount = useCartStore((s) => s.totalItems())
+  const wishlistCount = useWishlistStore((s) => s.items.length)
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
 
@@ -141,13 +143,27 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
           </button>
 
           {/* Wishlist */}
-          <button
-            onClick={onWishlistClick}
-            className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
-            aria-label="Wishlist"
-          >
-            <Heart className="w-[18px] h-[18px]" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={onWishlistClick}
+              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors duration-200"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-[18px] h-[18px]" />
+            </button>
+            <AnimatePresence>
+              {mounted && wishlistCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 min-w-[18px] rounded-full gradient-gold text-[10px] font-semibold text-white leading-none"
+                >
+                  {wishlistCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Cart with Badge */}
           <div className="relative">
