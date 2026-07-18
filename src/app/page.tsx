@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
@@ -34,6 +35,7 @@ function useHydrated() {
 }
 
 export default function Home() {
+  const router = useRouter()
   const isAdmin = useAdminStore((s) => s.isAdmin)
   const setIsAdmin = useAdminStore((s) => s.setIsAdmin)
   const activeTab = useAdminStore((s) => s.activeTab)
@@ -45,6 +47,11 @@ export default function Home() {
   const mounted = useHydrated()
   const { isOpen, close, toggle } = useMobileNav()
   const cartCount = useCartStore((s) => s.totalItems())
+
+  const handleProductSearchClick = useCallback((productId: string) => {
+    setSearchOpen(false)
+    router.push(`/product/${productId}`)
+  }, [router])
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
@@ -106,7 +113,7 @@ export default function Home() {
     <QueryClientProvider client={queryClient}>
       <PageLoader />
       <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} />
-      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} onProductClick={handleProductSearchClick} />
       <MobileNavDrawer isOpen={isOpen} onClose={close} onAdminClick={() => setIsAdmin(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <WishlistDrawer isOpen={wishlistOpen} onClose={() => setWishlistOpen(false)} />

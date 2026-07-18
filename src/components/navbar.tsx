@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Search, Heart, ShoppingBag, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useCartStore } from '@/components/cart-drawer'
 
 const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
 
@@ -27,6 +28,7 @@ function useHydrated() {
 
 export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
+  const cartCount = useCartStore((s) => s.totalItems())
   const mounted = useHydrated()
   const { theme, setTheme } = useTheme()
 
@@ -148,9 +150,18 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
             >
               <ShoppingBag className="w-[18px] h-[18px]" />
             </button>
-            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 min-w-[18px] rounded-full gradient-gold text-[10px] font-semibold text-white leading-none">
-              3
-            </span>
+            <AnimatePresence>
+              {cartCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 min-w-[18px] rounded-full gradient-gold text-[10px] font-semibold text-white leading-none"
+                >
+                  {cartCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </nav>

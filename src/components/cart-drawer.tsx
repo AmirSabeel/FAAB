@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag, Lock } from 'lucide-react';
 import Image from 'next/image';
@@ -31,7 +32,9 @@ interface CartStore {
 
 // ─── Zustand Store (exported for external use) ───────────────────────────────
 
-export const useCartStore = create<CartStore>((set, get) => ({
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
   items: [
     {
       id: 'demo-silk-blazer',
@@ -82,7 +85,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
   totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
   totalPrice: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-}));
+    }),
+    {
+      name: 'faab-cart',
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
