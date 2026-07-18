@@ -35,11 +35,11 @@ export function useMobileNav() {
    ================================================================ */
 
 const DRAWER_LINKS = [
-  { label: 'New In', href: '#' },
-  { label: 'Women', href: '#' },
-  { label: 'Men', href: '#' },
-  { label: 'Collections', href: '#' },
-  { label: 'Sale', href: '#' },
+  { label: 'New In', href: '/shop?category=All' },
+  { label: 'Women', href: "/shop?category=Women's Fashion" },
+  { label: 'Men', href: "/shop?category=Men's Fashion" },
+  { label: 'Collections', href: '/shop' },
+  { label: 'Sale', href: '/shop?sale=true' },
   { label: 'Admin Panel', href: '#', icon: LayoutGrid, isAdmin: true },
 ] as const
 

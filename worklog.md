@@ -40,3 +40,23 @@ Stage Summary:
 - New files: src/app/checkout/page.tsx, src/app/api/orders/route.ts
 - Modified files: src/components/cart-drawer.tsx (added router + onClick navigation)
 - Full checkout flow: Cart → Checkout (3 steps) → Order Confirmation → orders appear in admin
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Build Shop page with category filtering, sorting, and product grid
+
+Work Log:
+- Created /api/products public endpoint with category filter, sale filter, sorting (newest/price/name/rating), pagination
+- Built /shop/page.tsx with: category pill tabs, animated product grid, sort dropdown, grid toggle (3/4 col), pagination, active filter chips
+- Wrapped useSearchParams in Suspense boundary with skeleton fallback
+- Wired navbar links: New In → /shop, Women → /shop?category=Women's Fashion, Men → /shop?category=Men's Fashion, Collections → /shop, Sale → /shop?sale=true
+- Wired mobile nav drawer links to matching /shop URLs
+- Linked homepage category circles to /shop with matching categories
+- Changed Trending "View All" href from # to /shop
+- Verified clean production build (18 routes)
+
+Stage Summary:
+- New files: src/app/shop/page.tsx, src/app/api/products/route.ts
+- Modified files: src/components/navbar.tsx, src/components/mobile-nav.tsx, src/components/sections.tsx
+- All navbar and mobile nav links now functional, pointing to /shop with category filters

@@ -9,6 +9,14 @@ import { useCartStore } from '@/components/cart-drawer'
 
 const NAV_LINKS = ['New In', 'Women', 'Men', 'Collections', 'Sale'] as const
 
+const NAV_HREFS: Record<string, string> = {
+  'New In': '/shop?category=All',
+  'Women': "/shop?category=Women's Fashion",
+  'Men': "/shop?category=Men's Fashion",
+  'Collections': '/shop',
+  'Sale': '/shop?sale=true',
+}
+
 interface NavbarProps {
   onMenuClick?: () => void
   onSearchClick?: () => void
@@ -173,10 +181,11 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
 
 function NavLink({ label, index }: { label: string; index: number }) {
   const [hovered, setHovered] = useState(false)
+  const href = NAV_HREFS[label] || '/shop'
 
   return (
     <motion.a
-      href="#"
+      href={href}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{

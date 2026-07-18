@@ -145,13 +145,14 @@ export function CategoriesSection() {
         <ScrollReveal>
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
             {categories.map((cat, idx) => (
-              <motion.div
+              <motion.a
                 key={cat.name}
+                href={`/shop?category=${encodeURIComponent(cat.name === 'Bags' ? 'Accessories' : cat.name === 'Beauty' ? "Women's Fashion" : cat.name)}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.06 }}
-                className="min-w-[140px] md:min-w-[180px] rounded-3xl overflow-hidden group cursor-pointer shrink-0"
+                className="min-w-[140px] md:min-w-[180px] rounded-3xl overflow-hidden group cursor-pointer shrink-0 block"
               >
                 <div className="relative aspect-square overflow-hidden">
                   <Image
@@ -166,7 +167,7 @@ export function CategoriesSection() {
                     {cat.name}
                   </span>
                 </div>
-              </motion.div>
+              </motion.a>
             ))}
           </div>
         </ScrollReveal>
@@ -381,7 +382,7 @@ export function TrendingProducts() {
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <SectionHeading
           title="Trending Now"
-          action={{ label: 'View All', href: '#' }}
+          action={{ label: 'View All', href: '/shop' }}
         />
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
