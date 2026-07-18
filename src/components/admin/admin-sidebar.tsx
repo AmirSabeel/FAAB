@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
+  TrendingUp,
   ShoppingCart,
   Users,
   BarChart3,
@@ -38,6 +39,7 @@ interface AdminSidebarProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", tab: "dashboard" },
   { icon: Package, label: "Products", tab: "products" },
+  { icon: TrendingUp, label: "Trending", tab: "trending" },
   { icon: ShoppingCart, label: "Orders", tab: "orders" },
   { icon: Users, label: "Customers", tab: "customers" },
   { icon: BarChart3, label: "Analytics", tab: "analytics" },

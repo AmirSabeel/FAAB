@@ -1,11 +1,25 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProductCard from '@/components/product-card';
+
+/* ============================================================
+   Fetch trending products from API
+   ============================================================ */
+interface TrendingProductData {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice: number | null;
+  image: string;
+  rating: number;
+  reviewCount: number;
+  isNew: boolean;
+}
 
 /* ============================================================
    ScrollReveal — reusable scroll-triggered fade-up wrapper
@@ -242,10 +256,11 @@ export function FeaturedCollections() {
 }
 
 /* ============================================================
-   3. TrendingProducts
+   3. TrendingProducts — fetched from /api/trending
    ============================================================ */
 
-const trendingProducts = [
+// Fallback data used when API returns empty (e.g. fresh install)
+const FALLBACK_TRENDING = [
   {
     id: 'trend-1',
     name: 'Silk Blend Blazer',
@@ -327,7 +342,40 @@ const trendingProducts = [
   },
 ];
 
+function computeBadge(price: number, originalPrice: number | null): string | undefined {
+  if (originalPrice && originalPrice > price) {
+    const pct = Math.round(((originalPrice - price) / originalPrice) * 100)
+    return `-${pct}%`
+  }
+  return undefined
+}
+
 export function TrendingProducts() {
+  const [products, setProducts] = useState<(TrendingProductData & { badge?: string })[]>([])
+
+  useEffect(() => {
+    fetch('/api/trending')
+      .then((r) => r.json())
+      .then((data: TrendingProductData[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(
+            data.map((p) => ({
+              ...p,
+              badge: computeBadge(p.price, p.originalPrice),
+            }))
+          )
+        } else {
+          // Use fallback when DB has no trending products
+          setProducts(FALLBACK_TRENDING)
+        }
+      })
+      .catch(() => {
+        setProducts(FALLBACK_TRENDING)
+      })
+  }, [])
+
+  const displayProducts = products.length > 0 ? products : FALLBACK_TRENDING
+
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
@@ -337,7 +385,7 @@ export function TrendingProducts() {
         />
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {trendingProducts.map((product, idx) => (
+          {displayProducts.map((product, idx) => (
             <ScrollReveal key={product.id} delay={idx * 0.06}>
               <ProductCard {...product} />
             </ScrollReveal>

@@ -19,11 +19,13 @@ model Product {
   reviewCount Int      @default(0)
   stock       Int      @default(0)
   status      String   @default("active")
-  isFeatured  Boolean  @default(false)
-  isNew       Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  orderItems  OrderItem[]
+  isFeatured    Boolean  @default(false)
+  isNew         Boolean  @default(false)
+  isTrending    Boolean  @default(false)
+  trendingOrder Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orderItems    OrderItem[]
 }
 
 model Customer {

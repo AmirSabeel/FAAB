@@ -9,6 +9,7 @@ import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminCustomers } from '@/components/admin/admin-customers'
 import { AdminAnalytics } from '@/components/admin/admin-analytics'
+import { AdminTrending } from '@/components/admin/admin-trending'
 import { useAdminStore } from '@/components/admin/admin-store'
 import { Navbar } from '@/components/navbar'
 import { useMobileNav, MobileNavDrawer, BottomNavBar } from '@/components/mobile-nav'
@@ -91,6 +92,7 @@ export default function Home() {
             >
               {activeTab === 'dashboard' && <AdminDashboard />}
               {activeTab === 'products' && <AdminProducts />}
+              {activeTab === 'trending' && <AdminTrending />}
               {activeTab === 'orders' && <AdminOrders />}
               {activeTab === 'customers' && <AdminCustomers />}
               {activeTab === 'analytics' && <AdminAnalytics />}
