@@ -133,7 +133,7 @@ export function ImageUpload({ value, onChange, label = 'Product Image' }: ImageU
     setProgress(0)
   }, [onChange])
 
-  const hasImage = !!(value && value.trim())
+  const hasImage = !!value && value.trim().length > 0
 
   return (
     <div className="space-y-2">
