@@ -48,7 +48,7 @@ export const ALL_PRODUCTS: Product[] = [
     image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&h=667&fit=crop&q=80',
     images: [
       'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&h=1067&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1434389677669-e08b4cda3a1a?w=800&h=1067&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578681994506-b8f463449011?w=800&h=1067&fit=crop&q=80',
     ],
     rating: 4.9,
     reviewCount: 89,

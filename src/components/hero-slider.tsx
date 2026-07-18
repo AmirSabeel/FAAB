@@ -40,7 +40,7 @@ const slides: Slide[] = [
   {
     id: 3,
     image:
-      'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80',
+      'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&q=80',
     title: 'Define\nYour Style',
     subtitle:
       'From runway to everyday — express your individuality with pieces that speak louder than words.',
