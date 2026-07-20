@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Search,
@@ -9,6 +9,7 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -45,6 +46,22 @@ const CATEGORIES = [
 ]
 
 const STATUS_OPTIONS = ['All', 'Active', 'Draft']
+const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size']
+
+const COLOR_PRESETS = [
+  { name: 'Black', hex: '#1a1a1a' },
+  { name: 'White', hex: '#f5f5f5' },
+  { name: 'Navy', hex: '#1e3a5f' },
+  { name: 'Charcoal', hex: '#36454f' },
+  { name: 'Ivory', hex: '#f5f0e8' },
+  { name: 'Blush', hex: '#e8c4b8' },
+  { name: 'Grey', hex: '#8a8a8a' },
+  { name: 'Burgundy', hex: '#800020' },
+  { name: 'Olive', hex: '#556b2f' },
+  { name: 'Tan', hex: '#d2b48c' },
+  { name: 'Beige', hex: '#c8b88a' },
+  { name: 'Red', hex: '#cc0000' },
+]
 
 interface Product {
   id: string
@@ -59,6 +76,13 @@ interface Product {
   isFeatured: boolean
   isNew: boolean
   createdAt: string
+  sizes?: string
+  colors?: string
+}
+
+interface ColorOption {
+  name: string
+  hex: string
 }
 
 interface ProductFormData {
@@ -71,6 +95,18 @@ interface ProductFormData {
   image: string
   isFeatured: boolean
   isNew: boolean
+  sizes: string[]
+  colors: ColorOption[]
+}
+
+function safeParseJSON<T>(str: string | undefined | null, fallback: T): T {
+  if (!str) return fallback
+  try {
+    const parsed = JSON.parse(str)
+    return Array.isArray(parsed) ? parsed : fallback
+  } catch {
+    return fallback
+  }
 }
 
 const emptyForm: ProductFormData = {
@@ -83,6 +119,8 @@ const emptyForm: ProductFormData = {
   image: '',
   isFeatured: false,
   isNew: false,
+  sizes: ['S', 'M', 'L', 'XL'],
+  colors: [],
 }
 
 function TableSkeleton() {
@@ -140,6 +178,10 @@ export function AdminProducts() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Color input state
+  const [newColorName, setNewColorName] = useState('')
+  const [newColorHex, setNewColorHex] = useState('#000000')
+
   // Fetch products
   const { data, isLoading } = useQuery<{
     products: Product[]
@@ -157,9 +199,7 @@ export function AdminProducts() {
   // Save (create/update) mutation
   const saveMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
-      const url = editingProduct
-        ? '/api/admin/products'
-        : '/api/admin/products'
+      const url = '/api/admin/products'
       const method = editingProduct ? 'PUT' : 'POST'
       const res = await fetch(url, {
         method,
@@ -216,6 +256,8 @@ export function AdminProducts() {
       image: product.image,
       isFeatured: product.isFeatured,
       isNew: product.isNew,
+      sizes: safeParseJSON<string[]>(product.sizes, ['S', 'M', 'L', 'XL']),
+      colors: safeParseJSON<ColorOption[]>(product.colors, []),
     })
     setModalOpen(true)
   }
@@ -225,7 +267,61 @@ export function AdminProducts() {
     setEditingProduct(null)
     setForm(emptyForm)
     setSaving(false)
+    setNewColorName('')
+    setNewColorHex('#000000')
   }
+
+  // Size toggle helper
+  const toggleSize = useCallback((size: string) => {
+    setForm((prev) => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter((s) => s !== size)
+        : [...prev.sizes, size],
+    }))
+  }, [])
+
+  // Add custom size
+  const addCustomSize = useCallback((size: string) => {
+    if (size.trim() && !form.sizes.includes(size.trim())) {
+      setForm((prev) => ({ ...prev, sizes: [...prev.sizes, size.trim()] }))
+    }
+  }, [form.sizes])
+
+  // Color management
+  const addColor = useCallback(() => {
+    if (newColorName.trim() && newColorHex.trim()) {
+      const exists = form.colors.some(
+        (c) => c.name.toLowerCase() === newColorName.trim().toLowerCase()
+      )
+      if (!exists) {
+        setForm((prev) => ({
+          ...prev,
+          colors: [...prev.colors, { name: newColorName.trim(), hex: newColorHex.trim() }],
+        }))
+        setNewColorName('')
+      }
+    }
+  }, [newColorName, newColorHex, form.colors])
+
+  const addPresetColor = useCallback((preset: ColorOption) => {
+    const exists = form.colors.some(
+      (c) => c.name.toLowerCase() === preset.name.toLowerCase()
+    )
+    if (!exists) {
+      setForm((prev) => ({
+        ...prev,
+        colors: [...prev.colors, preset],
+      }))
+    }
+  }, [form.colors])
+
+  const removeColor = useCallback((name: string) => {
+    setForm((prev) => ({
+      ...prev,
+      colors: prev.colors.filter((c) => c.name !== name),
+    }))
+  }, [])
 
   async function handleSave() {
     if (!form.name.trim() || !form.price) {
@@ -248,6 +344,8 @@ export function AdminProducts() {
       isFeatured: form.isFeatured,
       isNew: form.isNew,
       status: 'active',
+      sizes: form.sizes,
+      colors: form.colors,
     }
     await saveMutation.mutateAsync(body)
     setSaving(false)
@@ -493,14 +591,14 @@ export function AdminProducts() {
 
       {/* Add/Edit Product Modal */}
       <Dialog open={modalOpen} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-lg w-full border border-border/50">
+        <DialogContent className="bg-card rounded-3xl p-6 md:p-8 max-w-2xl w-full border border-border/50 max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 mt-2 max-h-[60vh] overflow-y-auto pr-1">
+          <div className="space-y-4 mt-2 overflow-y-auto pr-1 max-h-[65vh]">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="prod-name" className="text-sm font-medium">
@@ -605,6 +703,158 @@ export function AdminProducts() {
               onChange={(url) => setForm({ ...form, image: url })}
               label="Product Image"
             />
+
+            {/* Sizes */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Sizes</Label>
+              <div className="flex flex-wrap gap-2">
+                {COMMON_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => toggleSize(size)}
+                    className={cn(
+                      'h-9 min-w-[3rem] px-3 rounded-lg text-xs font-medium border transition-all cursor-pointer',
+                      form.sizes.includes(size)
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'border-border hover:border-foreground/40'
+                    )}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+              {/* Custom size input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Custom size (e.g. 28, 30, 32)"
+                  className="rounded-xl text-sm flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      addCustomSize((e.target as HTMLInputElement).value)
+                      ;(e.target as HTMLInputElement).value = ''
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement
+                    if (input) {
+                      addCustomSize(input.value)
+                      input.value = ''
+                    }
+                  }}
+                  className="h-10 px-3 rounded-xl border border-border text-xs font-medium hover:bg-muted/50 transition-colors cursor-pointer shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+              {form.sizes.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {form.sizes.join(', ')}
+                </p>
+              )}
+            </div>
+
+            {/* Colors */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Colors</Label>
+
+              {/* Already added colors */}
+              {form.colors.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {form.colors.map((color) => (
+                    <div
+                      key={color.name}
+                      className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border border-border bg-muted/30"
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full border border-border/50 shrink-0"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <span className="text-xs font-medium">{color.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeColor(color.name)}
+                        className="ml-0.5 text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add custom color */}
+              <div className="flex items-end gap-2">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-xs text-muted-foreground">Color Name</Label>
+                  <Input
+                    placeholder="e.g. Midnight Blue"
+                    value={newColorName}
+                    onChange={(e) => setNewColorName(e.target.value)}
+                    className="rounded-xl text-sm h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Hex</Label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="w-9 h-9 rounded-lg border border-border cursor-pointer p-0.5"
+                    />
+                    <Input
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="rounded-xl text-sm h-9 w-24 font-mono"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={addColor}
+                  className="h-9 px-3 rounded-xl gradient-gold text-white text-xs font-medium cursor-pointer shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+
+              {/* Quick-add preset colors */}
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">Quick add:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {COLOR_PRESETS.map((preset) => {
+                    const alreadyAdded = form.colors.some(
+                      (c) => c.name.toLowerCase() === preset.name.toLowerCase()
+                    )
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => addPresetColor(preset)}
+                        disabled={alreadyAdded}
+                        className={cn(
+                          'flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] border transition-all cursor-pointer',
+                          alreadyAdded
+                            ? 'opacity-40 cursor-not-allowed border-border'
+                            : 'border-border hover:border-foreground/40 hover:bg-muted/50'
+                        )}
+                        title={preset.name}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-border/50 shrink-0"
+                          style={{ backgroundColor: preset.hex }}
+                        />
+                        {preset.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
 
             {/* Checkboxes */}
             <div className="flex items-center gap-6">

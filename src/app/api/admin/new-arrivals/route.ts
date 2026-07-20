@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
 
-// GET /api/admin/new-arrivals — fetch all new arrival products ordered by newArrivalOrder
 export async function GET() {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const products = await db.product.findMany({
     where: { newArrivalOrder: { gt: 0 } },
     orderBy: { newArrivalOrder: 'asc' },
@@ -10,24 +13,22 @@ export async function GET() {
   return NextResponse.json(products)
 }
 
-// PUT /api/admin/new-arrivals — batch update new arrivals list (reorder, add, remove)
 export async function PUT(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const body = await req.json()
-  const { products } = body as {
-    products: Array<{ id: string; newArrivalOrder: number }>
-  }
+  const { products } = body as { products: Array<{ id: string; newArrivalOrder: number }> }
 
   if (!Array.isArray(products)) {
     return NextResponse.json({ error: 'products array required' }, { status: 400 })
   }
 
-  // Remove newArrival flag from ALL products
   await db.product.updateMany({
     where: { newArrivalOrder: { gt: 0 } },
     data: { newArrivalOrder: 0, isNew: false },
   })
 
-  // Set newArrival flag + order for the provided list
   for (const item of products) {
     await db.product.update({
       where: { id: item.id },
@@ -42,8 +43,10 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json(updated)
 }
 
-// PATCH /api/admin/new-arrivals — toggle a single product's new arrival status
 export async function PATCH(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const body = await req.json()
   const { id, isNewArrival } = body
 
@@ -67,8 +70,10 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json(product)
 }
 
-// DELETE /api/admin/new-arrivals?id=xxx — remove a product from new arrivals
 export async function DELETE(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })

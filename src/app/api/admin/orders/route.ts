@@ -1,7 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const status = searchParams.get('status') || ''
@@ -35,6 +39,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const body = await req.json()
   const { id, status } = body
   if (!id || !status) return NextResponse.json({ error: 'ID and status required' }, { status: 400 })

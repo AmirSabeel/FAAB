@@ -1,7 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const page = parseInt(searchParams.get('page') || '1')

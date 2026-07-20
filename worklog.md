@@ -200,3 +200,44 @@ Stage Summary:
 - Mobile bottom nav Profile tab routes to auth or profile drawer intelligently
 - Orders placed while logged in are automatically linked to the user account
 - Fixed pre-existing bug in quick-view-modal wishlist toggle
+
+---
+Task ID: 1
+Agent: Main
+Task: Fix 4 partially-built features: Image Upload, Analytics Dashboard, Admin Access, Product Sizes/Colors
+
+Work Log:
+
+**Fix 1: Image Upload**
+- Created /api/upload/route.ts (was completely missing — uploads returned 404)
+- Sharp-based processing: validates type (JPG/PNG/WebP/GIF/AVIF) and size (max 10MB)
+- Generates 5 WebP sizes: thumb (100x133), small (300x400), medium (500x667), large (800x1067), original
+- Auto-creates upload directories, returns all size URLs + metadata
+
+**Fix 2: Analytics Dashboard**
+- Created /api/admin/analytics/route.ts with live DB queries replacing all hardcoded data
+- Category revenue pie chart: groups OrderItems by product category from real orders
+- 14-day orders bar chart: real daily order count from DB
+- Customer growth card: this month vs last month from real Customer table
+- Avg order value card: this month vs last month from real Order table
+- Rewrote admin-analytics.tsx to fetch from API with loading skeletons and empty states
+
+**Fix 3: Admin Access Control**
+- Created src/lib/admin-auth.ts with requireAdmin() helper (checks NextAuth session + role="admin")
+- Protected ALL 10 admin API routes with auth checks
+- Admin panel now requires authenticated user with role="admin"
+- Non-logged-in users get login modal; non-admin users see "Access Denied" screen
+- Auto-kicks admin out if session expires
+- Seeded admin user: admin@faab.in / admin123
+
+**Fix 4: Product Sizes/Colors**
+- Added sizes and colors String fields to Product model (JSON arrays)
+- Updated product detail API to parse and return sizes/colors
+- Rewrote admin product form with size pill selector + color picker with presets
+- Seeded all 14 existing DB products with category-appropriate sizes/colors
+
+Stage Summary:
+- New files: src/app/api/upload/route.ts, src/app/api/admin/analytics/route.ts, src/lib/admin-auth.ts
+- Modified: prisma/schema.prisma, 10 admin API routes, admin-analytics.tsx, admin-products.tsx, admin-store.ts, page.tsx
+- Admin credentials: admin@faab.in / admin123
+- All 4 partially-built features now fully functional

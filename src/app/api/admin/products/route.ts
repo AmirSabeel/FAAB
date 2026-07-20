@@ -1,7 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
@@ -28,20 +32,41 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const body = await req.json()
-  const product = await db.product.create({ data: body })
+  // Ensure sizes/colors are stored as JSON strings
+  const data = {
+    ...body,
+    sizes: typeof body.sizes === 'string' ? body.sizes : JSON.stringify(body.sizes || []),
+    colors: typeof body.colors === 'string' ? body.colors : JSON.stringify(body.colors || []),
+  }
+  const product = await db.product.create({ data })
   return NextResponse.json(product, { status: 201 })
 }
 
 export async function PUT(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const body = await req.json()
-  const { id, ...data } = body
+  const { id, sizes, colors, ...rest } = body
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+  const data = {
+    ...rest,
+    sizes: typeof sizes === 'string' ? sizes : JSON.stringify(sizes || []),
+    colors: typeof colors === 'string' ? colors : JSON.stringify(colors || []),
+  }
   const product = await db.product.update({ where: { id }, data })
   return NextResponse.json(product)
 }
 
 export async function DELETE(req: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })

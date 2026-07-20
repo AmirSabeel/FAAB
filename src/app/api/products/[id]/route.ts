@@ -1,6 +1,15 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
+function safeParseJSON<T>(str: string, fallback: T): T {
+  try {
+    const parsed = JSON.parse(str)
+    return Array.isArray(parsed) ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,15 +31,14 @@ export async function GET(
     price: product.price,
     originalPrice: product.originalPrice,
     image: product.image,
-    images: [product.image], // single image in DB; extend later for gallery
+    images: [product.image],
     category: product.category,
     rating: product.rating,
     reviewCount: product.reviewCount,
     stock: product.stock,
     isNew: product.isNew,
     isFeatured: product.isFeatured,
-    // Detail page extras (not in DB yet — defaults)
-    sizes: [] as string[],
-    colors: [] as { name: string; hex: string }[],
+    sizes: safeParseJSON<string[]>(product.sizes, []),
+    colors: safeParseJSON<{ name: string; hex: string }[]>(product.colors, []),
   })
 }
