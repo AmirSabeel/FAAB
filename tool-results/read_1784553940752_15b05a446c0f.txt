@@ -1,0 +1,788 @@
+     1→'use client'
+     2→
+     3→import { useState, useMemo, useEffect } from 'react'
+     4→import { useRouter } from 'next/navigation'
+     5→import Image from 'next/image'
+     6→import Link from 'next/link'
+     7→import { motion, AnimatePresence } from 'framer-motion'
+     8→import {
+     9→  ArrowLeft,
+    10→  ArrowRight,
+    11→  Check,
+    12→  Truck,
+    13→  Shield,
+    14→  RefreshCw,
+    15→  Package,
+    16→  CreditCard,
+    17→  Lock,
+    18→  MapPin,
+    19→  User,
+    20→  Mail,
+    21→  Phone,
+    22→  ChevronRight,
+    23→  CheckCircle2,
+    24→  ShoppingBag,
+    25→} from 'lucide-react'
+    26→import { cn } from '@/lib/utils'
+    27→import { useCartStore } from '@/components/cart-drawer'
+    28→import { Input } from '@/components/ui/input'
+    29→import { Label } from '@/components/ui/label'
+    30→import { toast } from 'sonner'
+    31→
+    32→// ─── Types ───────────────────────────────────────────────────────────────
+    33→
+    34→interface CheckoutItem {
+    35→  id: string
+    36→  name: string
+    37→  price: number
+    38→  image: string
+    39→  size?: string
+    40→  color?: string
+    41→  quantity: number
+    42→}
+    43→
+    44→interface CustomerInfo {
+    45→  firstName: string
+    46→  lastName: string
+    47→  email: string
+    48→  phone: string
+    49→  address: string
+    50→  city: string
+    51→  state: string
+    52→  pincode: string
+    53→  country: string
+    54→}
+    55→
+    56→// ─── Constants ───────────────────────────────────────────────────────────
+    57→
+    58→const INDIAN_STATES = [
+    59→  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    60→  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+    61→  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+    62→  'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim',
+    63→  'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    64→  'Delhi', 'Chandigarh',
+    65→]
+    66→
+    67→const STEPS = [
+    68→  { label: 'Information', icon: User },
+    69→  { label: 'Shipping', icon: MapPin },
+    70→  { label: 'Payment', icon: CreditCard },
+    71→]
+    72→
+    73→const TRUST_FEATURES = [
+    74→  { icon: Truck, text: 'Free shipping on orders over ₹2,999' },
+    75→  { icon: RefreshCw, text: '30-day hassle-free returns' },
+    76→  { icon: Shield, text: '100% secure payment' },
+    77→]
+    78→
+    79→// ─── Helpers ─────────────────────────────────────────────────────────────
+    80→
+    81→function formatPrice(price: number): string {
+    82→  return new Intl.NumberFormat('en-IN', {
+    83→    style: 'currency',
+    84→    currency: 'INR',
+    85→    minimumFractionDigits: 0,
+    86→    maximumFractionDigits: 0,
+    87→  }).format(price)
+    88→}
+    89→
+    90→// ─── Animation ───────────────────────────────────────────────────────────
+    91→
+    92→const slideVariants = {
+    93→  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+    94→  center: { x: 0, opacity: 1 },
+    95→  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+    96→}
+    97→
+    98→// ─── Component ───────────────────────────────────────────────────────────
+    99→
+   100→export default function CheckoutPage() {
+   101→  const router = useRouter()
+   102→  const { items, totalPrice, clearCart } = useCartStore()
+   103→
+   104→  const [step, setStep] = useState(0)
+   105→  const [dir, setDir] = useState(1)
+   106→  const [placing, setPlacing] = useState(false)
+   107→  const [orderComplete, setOrderComplete] = useState<{ orderNumber: string } | null>(null)
+   108→
+   109→  const [customer, setCustomer] = useState<CustomerInfo>({
+   110→    firstName: '',
+   111→    lastName: '',
+   112→    email: '',
+   113→    phone: '',
+   114→    address: '',
+   115→    city: '',
+   116→    state: '',
+   117→    pincode: '',
+   118→    country: 'India',
+   119→  })
+   120→
+   121→  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'upi' | 'card'>('cod')
+   122→
+   123→  const subtotal = totalPrice()
+   124→  const shippingCost = subtotal >= 2999 ? 0 : 149
+   125→  const taxRate = 18
+   126→  const taxAmount = Math.round(subtotal * taxRate / 100)
+   127→  const total = subtotal + shippingCost + taxAmount
+   128→
+   129→  // Redirect if cart is empty and no order placed
+   130→  useEffect(() => {
+   131→    if (items.length === 0 && !orderComplete) {
+   132→      router.push('/')
+   133→    }
+   134→  }, [items, orderComplete, router])
+   135→
+   136→  const updateCustomer = (field: keyof CustomerInfo, value: string) => {
+   137→    setCustomer((prev) => ({ ...prev, [field]: value }))
+   138→  }
+   139→
+   140→  // ── Validation ──
+   141→
+   142→  function isInfoValid(): boolean {
+   143→    return !!(customer.firstName.trim() && customer.lastName.trim() && customer.email.trim() && customer.phone.trim())
+   144→  }
+   145→
+   146→  function isShippingValid(): boolean {
+   147→    return !!(customer.address.trim() && customer.city.trim() && customer.state.trim() && customer.pincode.trim())
+   148→  }
+   149→
+   150→  function goNext() {
+   151→    if (step === 0 && !isInfoValid()) {
+   152→      toast.error('Please fill in all contact details')
+   153→      return
+   154→    }
+   155→    if (step === 1 && !isShippingValid()) {
+   156→      toast.error('Please fill in all shipping details')
+   157→      return
+   158→    }
+   159→    setDir(1)
+   160→    setStep((s) => Math.min(s + 1, 2))
+   161→  }
+   162→
+   163→  function goBack() {
+   164→    setDir(-1)
+   165→    setStep((s) => Math.max(s - 1, 0))
+   166→  }
+   167→
+   168→  // ── Place Order ──
+   169→
+   170→  async function handlePlaceOrder() {
+   171→    if (placing) return
+   172→    setPlacing(true)
+   173→
+   174→    try {
+   175→      const res = await fetch('/api/orders', {
+   176→        method: 'POST',
+   177→        headers: { 'Content-Type': 'application/json' },
+   178→        body: JSON.stringify({
+   179→          items: items.map((item) => ({
+   180→            id: item.id,
+   181→            name: item.name,
+   182→            price: item.price,
+   183→            image: item.image,
+   184→            quantity: item.quantity,
+   185→            size: item.size,
+   186→            color: item.color,
+   187→          })),
+   188→          customer: {
+   189→            name: `${customer.firstName} ${customer.lastName}`,
+   190→            email: customer.email,
+   191→            phone: customer.phone,
+   192→            address: customer.address,
+   193→            city: customer.city,
+   194→            country: customer.country,
+   195→          },
+   196→          shipping: {
+   197→            rate: 149,
+   198→            free: true,
+   199→            threshold: 2999,
+   200→          },
+   201→          tax: {
+   202→            enabled: true,
+   203→            rate: taxRate,
+   204→          },
+   205→        }),
+   206→      })
+   207→
+   208→      const data = await res.json()
+   209→
+   210→      if (!res.ok) {
+   211→        throw new Error(data.error || 'Failed to place order')
+   212→      }
+   213→
+   214→      clearCart()
+   215→      setOrderComplete({ orderNumber: data.order.orderNumber })
+   216→      toast.success('Order placed successfully!')
+   217→    } catch (err) {
+   218→      toast.error(err instanceof Error ? err.message : 'Failed to place order')
+   219→    } finally {
+   220→      setPlacing(false)
+   221→    }
+   222→  }
+   223→
+   224→  // ── Order Confirmation ──
+   225→
+   226→  if (orderComplete) {
+   227→    return (
+   228→      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+   229→        <motion.div
+   230→          initial={{ opacity: 0, scale: 0.9 }}
+   231→          animate={{ opacity: 1, scale: 1 }}
+   232→          className="max-w-md w-full text-center"
+   233→        >
+   234→          <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
+   235→            <CheckCircle2 className="w-10 h-10 text-green-500" />
+   236→          </div>
+   237→          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Order Confirmed!</h1>
+   238→          <p className="text-muted-foreground mt-2">
+   239→            Thank you for your purchase. Your order has been placed successfully.
+   240→          </p>
+   241→
+   242→          <div className="mt-8 bg-card rounded-2xl border border-border/50 p-6 shadow-luxury">
+   243→            <div className="flex items-center justify-between py-3 border-b border-border/30">
+   244→              <span className="text-sm text-muted-foreground">Order Number</span>
+   245→              <span className="text-sm font-semibold font-mono">{orderComplete.orderNumber}</span>
+   246→            </div>
+   247→            <div className="flex items-center justify-between py-3 border-b border-border/30">
+   248→              <span className="text-sm text-muted-foreground">Status</span>
+   249→              <span className="text-xs font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 px-2.5 py-1 rounded-full">
+   250→                Pending
+   251→              </span>
+   252→            </div>
+   253→            <div className="flex items-center justify-between py-3">
+   254→              <span className="text-sm text-muted-foreground">Total</span>
+   255→              <span className="text-sm font-semibold">{formatPrice(total)}</span>
+   256→            </div>
+   257→          </div>
+   258→
+   259→          <div className="mt-8 flex items-center justify-center gap-3">
+   260→            <Link
+   261→              href="/orders"
+   262→              className="h-11 px-6 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center gap-2 hover:shadow-luxury-lg transition-all"
+   263→            >
+   264→              <Package className="w-4 h-4" />
+   265→              Track Order
+   266→            </Link>
+   267→            <Link
+   268→              href="/"
+   269→              className="h-11 px-6 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center gap-2"
+   270→            >
+   271→              <ShoppingBag className="w-4 h-4" />
+   272→              Continue Shopping
+   273→            </Link>
+   274→          </div>
+   275→
+   276→          <p className="text-xs text-muted-foreground mt-6">
+   277→            A confirmation email has been sent to {customer.email}
+   278→          </p>
+   279→        </motion.div>
+   280→      </div>
+   281→    )
+   282→  }
+   283→
+   284→  return (
+   285→    <div className="min-h-screen bg-background">
+   286→      {/* ── Top Bar ── */}
+   287→      <div className="border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-40">
+   288→        <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+   289→          <Link
+   290→            href="/"
+   291→            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+   292→          >
+   293→            <ArrowLeft className="w-4 h-4" />
+   294→            <span className="hidden sm:inline">Back to Store</span>
+   295→          </Link>
+   296→          <span className="text-sm font-semibold tracking-[0.2em] uppercase">FAAB</span>
+   297→          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+   298→            <Lock className="w-3.5 h-3.5" />
+   299→            <span className="hidden sm:inline">Secure Checkout</span>
+   300→          </div>
+   301→        </div>
+   302→      </div>
+   303→
+   304→      <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
+   305→        {/* ── Step Indicator ── */}
+   306→        <div className="flex items-center justify-center gap-0 mb-10">
+   307→          {STEPS.map((s, i) => {
+   308→            const Icon = s.icon
+   309→            const isActive = i === step
+   310→            const isComplete = i < step
+   311→            return (
+   312→              <div key={s.label} className="flex items-center">
+   313→                <div className="flex items-center gap-2.5">
+   314→                  <div className={cn(
+   315→                    'w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300',
+   316→                    isComplete
+   317→                      ? 'bg-green-500 text-white'
+   318→                      : isActive
+   319→                        ? 'gradient-gold text-white'
+   320→                        : 'bg-muted text-muted-foreground'
+   321→                  )}>
+   322→                    {isComplete ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+   323→                  </div>
+   324→                  <span className={cn(
+   325→                    'text-sm font-medium transition-colors hidden sm:block',
+   326→                    isActive ? 'text-foreground' : 'text-muted-foreground'
+   327→                  )}>
+   328→                    {s.label}
+   329→                  </span>
+   330→                </div>
+   331→                {i < STEPS.length - 1 && (
+   332→                  <div className={cn(
+   333→                    'w-12 md:w-20 h-px mx-3',
+   334→                    i < step ? 'bg-green-500' : 'bg-border'
+   335→                  )} />
+   336→                )}
+   337→              </div>
+   338→            )
+   339→          })}
+   340→        </div>
+   341→
+   342→        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+   343→          {/* ── Left: Form Steps ── */}
+   344→          <div className="lg:col-span-3">
+   345→            <AnimatePresence mode="wait" custom={dir}>
+   346→              {/* Step 0: Contact Information */}
+   347→              {step === 0 && (
+   348→                <motion.div
+   349→                  key="info"
+   350→                  custom={dir}
+   351→                  variants={slideVariants}
+   352→                  initial="enter"
+   353→                  animate="center"
+   354→                  exit="exit"
+   355→                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+   356→                  className="bg-card rounded-2xl border border-border/50 p-6 md:p-8 shadow-luxury"
+   357→                >
+   358→                  <h2 className="text-lg font-semibold mb-1">Contact Information</h2>
+   359→                  <p className="text-sm text-muted-foreground mb-6">We'll use this to send your order confirmation</p>
+   360→
+   361→                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   362→                    <div className="space-y-2">
+   363→                      <Label htmlFor="firstName" className="text-sm font-medium">
+   364→                        First Name <span className="text-red-500">*</span>
+   365→                      </Label>
+   366→                      <div className="relative">
+   367→                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   368→                        <Input
+   369→                          id="firstName"
+   370→                          value={customer.firstName}
+   371→                          onChange={(e) => updateCustomer('firstName', e.target.value)}
+   372→                          placeholder="John"
+   373→                          className="pl-10 rounded-xl"
+   374→                        />
+   375→                      </div>
+   376→                    </div>
+   377→
+   378→                    <div className="space-y-2">
+   379→                      <Label htmlFor="lastName" className="text-sm font-medium">
+   380→                        Last Name <span className="text-red-500">*</span>
+   381→                      </Label>
+   382→                      <Input
+   383→                        id="lastName"
+   384→                        value={customer.lastName}
+   385→                        onChange={(e) => updateCustomer('lastName', e.target.value)}
+   386→                        placeholder="Doe"
+   387→                        className="rounded-xl"
+   388→                      />
+   389→                    </div>
+   390→
+   391→                    <div className="space-y-2">
+   392→                      <Label htmlFor="email" className="text-sm font-medium">
+   393→                        Email <span className="text-red-500">*</span>
+   394→                      </Label>
+   395→                      <div className="relative">
+   396→                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   397→                        <Input
+   398→                          id="email"
+   399→                          type="email"
+   400→                          value={customer.email}
+   401→                          onChange={(e) => updateCustomer('email', e.target.value)}
+   402→                          placeholder="john@example.com"
+   403→                          className="pl-10 rounded-xl"
+   404→                        />
+   405→                      </div>
+   406→                    </div>
+   407→
+   408→                    <div className="space-y-2">
+   409→                      <Label htmlFor="phone" className="text-sm font-medium">
+   410→                        Phone <span className="text-red-500">*</span>
+   411→                      </Label>
+   412→                      <div className="relative">
+   413→                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   414→                        <Input
+   415→                          id="phone"
+   416→                          type="tel"
+   417→                          value={customer.phone}
+   418→                          onChange={(e) => updateCustomer('phone', e.target.value)}
+   419→                          placeholder="+91 98765 43210"
+   420→                          className="pl-10 rounded-xl"
+   421→                        />
+   422→                      </div>
+   423→                    </div>
+   424→                  </div>
+   425→
+   426→                  <button
+   427→                    onClick={goNext}
+   428→                    className="w-full mt-6 h-11 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center justify-center gap-2 cursor-pointer"
+   429→                  >
+   430→                    Continue to Shipping
+   431→                    <ArrowRight className="w-4 h-4" />
+   432→                  </button>
+   433→                </motion.div>
+   434→              )}
+   435→
+   436→              {/* Step 1: Shipping Address */}
+   437→              {step === 1 && (
+   438→                <motion.div
+   439→                  key="shipping"
+   440→                  custom={dir}
+   441→                  variants={slideVariants}
+   442→                  initial="enter"
+   443→                  animate="center"
+   444→                  exit="exit"
+   445→                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+   446→                  className="bg-card rounded-2xl border border-border/50 p-6 md:p-8 shadow-luxury"
+   447→                >
+   448→                  <h2 className="text-lg font-semibold mb-1">Shipping Address</h2>
+   449→                  <p className="text-sm text-muted-foreground mb-6">Where should we deliver your order?</p>
+   450→
+   451→                  <div className="space-y-4">
+   452→                    <div className="space-y-2">
+   453→                      <Label htmlFor="address" className="text-sm font-medium">
+   454→                        Address <span className="text-red-500">*</span>
+   455→                      </Label>
+   456→                      <Input
+   457→                        id="address"
+   458→                        value={customer.address}
+   459→                        onChange={(e) => updateCustomer('address', e.target.value)}
+   460→                        placeholder="House No., Street, Area"
+   461→                        className="rounded-xl"
+   462→                      />
+   463→                    </div>
+   464→
+   465→                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   466→                      <div className="space-y-2">
+   467→                        <Label htmlFor="city" className="text-sm font-medium">
+   468→                          City <span className="text-red-500">*</span>
+   469→                        </Label>
+   470→                        <Input
+   471→                          id="city"
+   472→                          value={customer.city}
+   473→                          onChange={(e) => updateCustomer('city', e.target.value)}
+   474→                          placeholder="Mumbai"
+   475→                          className="rounded-xl"
+   476→                        />
+   477→                      </div>
+   478→
+   479→                      <div className="space-y-2">
+   480→                        <Label htmlFor="state" className="text-sm font-medium">
+   481→                          State <span className="text-red-500">*</span>
+   482→                        </Label>
+   483→                        <select
+   484→                          id="state"
+   485→                          value={customer.state}
+   486→                          onChange={(e) => updateCustomer('state', e.target.value)}
+   487→                          className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all cursor-pointer"
+   488→                        >
+   489→                          <option value="">Select State</option>
+   490→                          {INDIAN_STATES.map((s) => (
+   491→                            <option key={s} value={s}>{s}</option>
+   492→                          ))}
+   493→                        </select>
+   494→                      </div>
+   495→                    </div>
+   496→
+   497→                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   498→                      <div className="space-y-2">
+   499→                        <Label htmlFor="pincode" className="text-sm font-medium">
+   500→                          PIN Code <span className="text-red-500">*</span>
+   501→                        </Label>
+   502→                        <Input
+   503→                          id="pincode"
+   504→                          value={customer.pincode}
+   505→                          onChange={(e) => updateCustomer('pincode', e.target.value)}
+   506→                          placeholder="400001"
+   507→                          className="rounded-xl max-w-[200px]"
+   508→                        />
+   509→                      </div>
+   510→
+   511→                      <div className="space-y-2">
+   512→                        <Label htmlFor="country" className="text-sm font-medium">Country</Label>
+   513→                        <Input
+   514→                          id="country"
+   515→                          value={customer.country}
+   516→                          onChange={(e) => updateCustomer('country', e.target.value)}
+   517→                          placeholder="India"
+   518→                          className="rounded-xl"
+   519→                        />
+   520→                      </div>
+   521→                    </div>
+   522→                  </div>
+   523→
+   524→                  <div className="flex items-center gap-3 mt-6">
+   525→                    <button
+   526→                      onClick={goBack}
+   527→                      className="h-11 px-6 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center gap-2 cursor-pointer"
+   528→                    >
+   529→                      <ArrowLeft className="w-4 h-4" />
+   530→                      Back
+   531→                    </button>
+   532→                    <button
+   533→                      onClick={goNext}
+   534→                      className="flex-1 h-11 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center justify-center gap-2 cursor-pointer"
+   535→                    >
+   536→                      Continue to Payment
+   537→                      <ArrowRight className="w-4 h-4" />
+   538→                    </button>
+   539→                  </div>
+   540→                </motion.div>
+   541→              )}
+   542→
+   543→              {/* Step 2: Payment */}
+   544→              {step === 2 && (
+   545→                <motion.div
+   546→                  key="payment"
+   547→                  custom={dir}
+   548→                  variants={slideVariants}
+   549→                  initial="enter"
+   550→                  animate="center"
+   551→                  exit="exit"
+   552→                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+   553→                  className="bg-card rounded-2xl border border-border/50 p-6 md:p-8 shadow-luxury"
+   554→                >
+   555→                  <h2 className="text-lg font-semibold mb-1">Payment Method</h2>
+   556→                  <p className="text-sm text-muted-foreground mb-6">All transactions are secure and encrypted</p>
+   557→
+   558→                  <div className="space-y-3">
+   559→                    {/* Cash on Delivery */}
+   560→                    <button
+   561→                      onClick={() => setPaymentMethod('cod')}
+   562→                      className={cn(
+   563→                        'w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer',
+   564→                        paymentMethod === 'cod'
+   565→                          ? 'border-gold bg-gold/5'
+   566→                          : 'border-border hover:border-border/80'
+   567→                      )}
+   568→                    >
+   569→                      <div className={cn(
+   570→                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+   571→                        paymentMethod === 'cod' ? 'bg-gold/10 text-gold' : 'bg-muted'
+   572→                      )}>
+   573→                        <Package className="w-5 h-5" />
+   574→                      </div>
+   575→                      <div className="flex-1">
+   576→                        <p className="text-sm font-medium">Cash on Delivery</p>
+   577→                        <p className="text-xs text-muted-foreground mt-0.5">Pay when your order arrives at your doorstep</p>
+   578→                      </div>
+   579→                      <div className={cn(
+   580→                        'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+   581→                        paymentMethod === 'cod' ? 'border-gold' : 'border-border'
+   582→                      )}>
+   583→                        {paymentMethod === 'cod' && <div className="w-2.5 h-2.5 rounded-full bg-gold" />}
+   584→                      </div>
+   585→                    </button>
+   586→
+   587→                    {/* UPI */}
+   588→                    <button
+   589→                      onClick={() => setPaymentMethod('upi')}
+   590→                      className={cn(
+   591→                        'w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer',
+   592→                        paymentMethod === 'upi'
+   593→                          ? 'border-gold bg-gold/5'
+   594→                          : 'border-border hover:border-border/80'
+   595→                      )}
+   596→                    >
+   597→                      <div className={cn(
+   598→                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+   599→                        paymentMethod === 'upi' ? 'bg-gold/10 text-gold' : 'bg-muted'
+   600→                      )}>
+   601→                        <Smartphone className="w-5 h-5" />
+   602→                      </div>
+   603→                      <div className="flex-1">
+   604→                        <p className="text-sm font-medium">UPI Payment</p>
+   605→                        <p className="text-xs text-muted-foreground mt-0.5">Pay via Google Pay, PhonePe, or any UPI app</p>
+   606→                      </div>
+   607→                      <div className={cn(
+   608→                        'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+   609→                        paymentMethod === 'upi' ? 'border-gold' : 'border-border'
+   610→                      )}>
+   611→                        {paymentMethod === 'upi' && <div className="w-2.5 h-2.5 rounded-full bg-gold" />}
+   612→                      </div>
+   613→                    </button>
+   614→
+   615→                    {/* Card */}
+   616→                    <button
+   617→                      onClick={() => setPaymentMethod('card')}
+   618→                      className={cn(
+   619→                        'w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer',
+   620→                        paymentMethod === 'card'
+   621→                          ? 'border-gold bg-gold/5'
+   622→                          : 'border-border hover:border-border/80'
+   623→                      )}
+   624→                    >
+   625→                      <div className={cn(
+   626→                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+   627→                        paymentMethod === 'card' ? 'bg-gold/10 text-gold' : 'bg-muted'
+   628→                      )}>
+   629→                        <CreditCard className="w-5 h-5" />
+   630→                      </div>
+   631→                      <div className="flex-1">
+   632→                        <p className="text-sm font-medium">Credit / Debit Card</p>
+   633→                        <p className="text-xs text-muted-foreground mt-0.5">Visa, Mastercard, RuPay accepted</p>
+   634→                      </div>
+   635→                      <div className={cn(
+   636→                        'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+   637→                        paymentMethod === 'card' ? 'border-gold' : 'border-border'
+   638→                      )}>
+   639→                        {paymentMethod === 'card' && <div className="w-2.5 h-2.5 rounded-full bg-gold" />}
+   640→                      </div>
+   641→                    </button>
+   642→                  </div>
+   643→
+   644→                  {/* Trust badges */}
+   645→                  <div className="mt-6 p-4 rounded-xl bg-muted/30 space-y-2">
+   646→                    {TRUST_FEATURES.map((f) => (
+   647→                      <div key={f.text} className="flex items-center gap-2.5">
+   648→                        <f.icon className="w-4 h-4 text-gold shrink-0" />
+   649→                        <span className="text-xs text-muted-foreground">{f.text}</span>
+   650→                      </div>
+   651→                    ))}
+   652→                  </div>
+   653→
+   654→                  <div className="flex items-center gap-3 mt-6">
+   655→                    <button
+   656→                      onClick={goBack}
+   657→                      className="h-11 px-6 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center gap-2 cursor-pointer"
+   658→                    >
+   659→                      <ArrowLeft className="w-4 h-4" />
+   660→                      Back
+   661→                    </button>
+   662→                    <button
+   663→                      onClick={handlePlaceOrder}
+   664→                      disabled={placing}
+   665→                      className="flex-1 h-11 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+   666→                    >
+   667→                      {placing ? (
+   668→                        <>
+   669→                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+   670→                          Placing Order...
+   671→                        </>
+   672→                      ) : (
+   673→                        <>
+   674→                          <Lock className="w-4 h-4" />
+   675→                          Place Order — {formatPrice(total)}
+   676→                        </>
+   677→                      )}
+   678→                    </button>
+   679→                  </div>
+   680→                </motion.div>
+   681→              )}
+   682→            </AnimatePresence>
+   683→          </div>
+   684→
+   685→          {/* ── Right: Order Summary ── */}
+   686→          <div className="lg:col-span-2">
+   687→            <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-luxury lg:sticky lg:top-24">
+   688→              <h3 className="text-base font-semibold mb-4">Order Summary</h3>
+   689→
+   690→              {/* Items */}
+   691→              <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
+   692→                {items.map((item) => (
+   693→                  <div key={item.id} className="flex gap-3">
+   694→                    <div className="w-16 h-20 rounded-xl overflow-hidden bg-muted shrink-0 relative">
+   695→                      <Image
+   696→                        src={item.image}
+   697→                        alt={item.name}
+   698→                        fill
+   699→                        className="object-cover"
+   700→                        sizes="64px"
+   701→                      />
+   702→                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground text-background text-[10px] font-bold flex items-center justify-center">
+   703→                        {item.quantity}
+   704→                      </div>
+   705→                    </div>
+   706→                    <div className="flex-1 min-w-0">
+   707→                      <p className="text-sm font-medium line-clamp-1">{item.name}</p>
+   708→                      {(item.size || item.color) && (
+   709→                        <p className="text-xs text-muted-foreground mt-0.5">
+   710→                          {item.size && `Size: ${item.size}`}
+   711→                          {item.size && item.color && ' · '}
+   712→                          {item.color && `Color: ${item.color}`}
+   713→                        </p>
+   714→                      )}
+   715→                      <p className="text-sm font-semibold mt-1">{formatPrice(item.price)}</p>
+   716→                    </div>
+   717→                  </div>
+   718→                ))}
+   719→              </div>
+   720→
+   721→              {/* Totals */}
+   722→              <div className="mt-6 pt-4 border-t border-border/50 space-y-2.5">
+   723→                <div className="flex items-center justify-between text-sm">
+   724→                  <span className="text-muted-foreground">Subtotal</span>
+   725→                  <span>{formatPrice(subtotal)}</span>
+   726→                </div>
+   727→                <div className="flex items-center justify-between text-sm">
+   728→                  <span className="text-muted-foreground">Shipping</span>
+   729→                  <span className={shippingCost === 0 ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
+   730→                    {shippingCost === 0 ? 'Free' : formatPrice(shippingCost)}
+   731→                  </span>
+   732→                </div>
+   733→                {shippingCost > 0 && (
+   734→                  <p className="text-xs text-muted-foreground">
+   735→                    Add {formatPrice(2999 - subtotal)} more for free shipping
+   736→                  </p>
+   737→                )}
+   738→                <div className="flex items-center justify-between text-sm">
+   739→                  <span className="text-muted-foreground">Tax (GST {taxRate}%)</span>
+   740→                  <span>{formatPrice(taxAmount)}</span>
+   741→                </div>
+   742→              </div>
+   743→
+   744→              <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+   745→                <span className="text-base font-semibold">Total</span>
+   746→                <span className="text-lg font-semibold">{formatPrice(total)}</span>
+   747→              </div>
+   748→
+   749→              {/* Promo Code */}
+   750→              <div className="mt-4 pt-4 border-t border-border/50">
+   751→                <div className="flex gap-2">
+   752→                  <Input
+   753→                    placeholder="Promo code"
+   754→                    className="rounded-xl text-sm h-10"
+   755→                  />
+   756→                  <button className="h-10 px-4 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors shrink-0 cursor-pointer">
+   757→                    Apply
+   758→                  </button>
+   759→                </div>
+   760→              </div>
+   761→            </div>
+   762→          </div>
+   763→        </div>
+   764→      </div>
+   765→    </div>
+   766→  )
+   767→}
+   768→
+   769→// Need Smartphone icon for UPI
+   770→function Smartphone(props: React.SVGProps<SVGSVGElement> & { className?: string }) {
+   771→  return (
+   772→    <svg
+   773→      xmlns="http://www.w3.org/2000/svg"
+   774→      width="24"
+   775→      height="24"
+   776→      viewBox="0 0 24 24"
+   777→      fill="none"
+   778→      stroke="currentColor"
+   779→      strokeWidth="2"
+   780→      strokeLinecap="round"
+   781→      strokeLinejoin="round"
+   782→      {...props}
+   783→    >
+   784→      <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+   785→      <path d="M12 18h.01" />
+   786→    </svg>
+   787→  )
+   788→}
