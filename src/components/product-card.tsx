@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/components/cart-drawer';
 import { useWishlistStore } from '@/components/wishlist-store';
+import { useProductOverridesStore } from '@/hooks/use-product-overrides';
 
 interface ProductCardProps {
   id: string;
@@ -52,7 +53,13 @@ export default function ProductCard({
   isNew,
   onQuickView,
 }: ProductCardProps) {
-  const [addedToCart, setAddedToCart] = useState(false);
+  const overrides = useProductOverridesStore((s) => s.overrides);
+  const override = overrides[name.toLowerCase().trim()] || overrides[id];
+
+  const displayPrice = override?.price !== undefined ? override.price : price;
+  const displayOriginalPrice = override?.originalPrice !== undefined ? override.originalPrice : originalPrice;
+  const displayImage = override?.image || image;
+  const displayName = override?.name || name;
 
   // ── Real store connections ──
   const addItem = useCartStore((s) => s.addItem);
@@ -63,32 +70,32 @@ export default function ProductCard({
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      toggleWishlist({ id, name, price, image });
+      toggleWishlist({ id, name: displayName, price: displayPrice, image: displayImage });
       if (!wishlisted) {
         toast.success('Added to wishlist', {
-          description: name,
+          description: displayName,
           duration: 2000,
         });
       }
     },
-    [id, name, price, image, toggleWishlist, wishlisted]
+    [id, displayName, displayPrice, displayImage, toggleWishlist, wishlisted]
   );
 
   const handleAddToCart = useCallback(() => {
-    addItem({ id, name, price, image });
+    addItem({ id, name: displayName, price: displayPrice, image: displayImage });
     setAddedToCart(true);
     toast.success('Added to cart', {
-      description: name,
+      description: displayName,
       duration: 2000,
     });
     setTimeout(() => setAddedToCart(false), 1500);
-  }, [id, name, price, image, addItem]);
+  }, [id, displayName, displayPrice, displayImage, addItem]);
 
   // Compute sale badge from prices if not provided
   const displayBadge = badge
     ? badge
-    : originalPrice && originalPrice > price
-      ? `-${Math.round(((originalPrice - price) / originalPrice) * 100)}%`
+    : displayOriginalPrice && displayOriginalPrice > displayPrice
+      ? `-${Math.round(((displayOriginalPrice - displayPrice) / displayOriginalPrice) * 100)}%`
       : undefined;
 
   return (
@@ -102,8 +109,8 @@ export default function ProductCard({
       {/* Image Container */}
       <div className="aspect-[3/4] overflow-hidden relative">
         <Image
-          src={image}
-          alt={name}
+          src={displayImage}
+          alt={displayName}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -150,7 +157,7 @@ export default function ProductCard({
       {/* Content Area */}
       <div className="p-4 space-y-2">
         <h3 className="text-sm font-medium line-clamp-1 text-foreground">
-          {name}
+          {displayName}
         </h3>
 
         <div className="flex items-center gap-1.5">
@@ -162,11 +169,11 @@ export default function ProductCard({
 
         <div className="flex items-center gap-2">
           <span className="text-lg font-semibold text-foreground">
-            ₹{price.toLocaleString('en-IN')}
+            ₹{displayPrice.toLocaleString('en-IN')}
           </span>
-          {originalPrice && (
+          {displayOriginalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ₹{originalPrice.toLocaleString('en-IN')}
+              ₹{displayOriginalPrice.toLocaleString('en-IN')}
             </span>
           )}
         </div>

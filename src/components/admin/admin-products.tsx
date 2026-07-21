@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { adminFetch } from '@/lib/admin-fetch'
+import { useProductOverridesStore } from '@/hooks/use-product-overrides'
 
 const CATEGORIES = [
   "Women's Fashion",
@@ -214,6 +215,15 @@ export function AdminProducts() {
       return res.json()
     },
     onSuccess: async (updatedProduct: any) => {
+      if (updatedProduct?.name) {
+        useProductOverridesStore.getState().setOverride(updatedProduct.name, {
+          price: Number(updatedProduct.price),
+          originalPrice: updatedProduct.originalPrice ? Number(updatedProduct.originalPrice) : null,
+          image: updatedProduct.image,
+          name: updatedProduct.name,
+        })
+      }
+
       queryClient.setQueriesData({ queryKey: ['admin-products'] }, (oldData: any) => {
         if (!oldData || !Array.isArray(oldData.products)) return oldData
         const updatedList = oldData.products.map((p: any) => {
