@@ -44,6 +44,7 @@ const CATEGORIES = [
   'Accessories',
   'Footwear',
   'Jewelry',
+  'Watches',
 ]
 
 const STATUS_OPTIONS = ['All', 'Active', 'Draft']
