@@ -25,37 +25,34 @@ const FALLBACK_ADMIN_PRODUCTS = ALL_PRODUCTS.map((p, i) => ({
 async function ensureDefaultProducts() {
   try {
     const count = await db.product.count()
-    if (count < ALL_PRODUCTS.length) {
+    if (count === 0) {
       for (let i = 0; i < ALL_PRODUCTS.length; i++) {
         const p = ALL_PRODUCTS[i]
-        const existing = await db.product.findFirst({ where: { name: p.name } })
-        if (!existing) {
-          await db.product.create({
-            data: {
-              name: p.name,
-              description: p.description,
-              price: p.price,
-              originalPrice: p.originalPrice || null,
-              image: p.image,
-              category: p.category,
-              rating: p.rating || 4.8,
-              reviewCount: p.reviewCount || 10,
-              stock: 25,
-              status: 'active',
-              isFeatured: true,
-              isNew: p.isNew || false,
-              isTrending: p.id.startsWith('trend-'),
-              trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
-              newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
-              sizes: JSON.stringify(p.sizes || []),
-              colors: JSON.stringify(p.colors || []),
-            },
-          }).catch(() => {})
-        }
+        await db.product.create({
+          data: {
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            originalPrice: p.originalPrice || null,
+            image: p.image,
+            category: p.category,
+            rating: p.rating || 4.8,
+            reviewCount: p.reviewCount || 10,
+            stock: 25,
+            status: 'active',
+            isFeatured: true,
+            isNew: p.isNew || false,
+            isTrending: p.id.startsWith('trend-'),
+            trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
+            newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
+            sizes: JSON.stringify(p.sizes || []),
+            colors: JSON.stringify(p.colors || []),
+          },
+        }).catch(() => {})
       }
     }
   } catch {
-    // Read-only filesystem or db catch
+    // catch any table or filesystem error
   }
 }
 
@@ -85,7 +82,6 @@ export async function GET(req: NextRequest) {
       db.product.count({ where }),
     ])
 
-    // If database returned 0 products (e.g. fresh Vercel serverless DB), use fallback products
     if (!products || products.length === 0) {
       let filtered = FALLBACK_ADMIN_PRODUCTS
       if (category && category !== 'all' && category !== 'All') {
@@ -173,7 +169,7 @@ export async function PUT(req: NextRequest) {
     if (body.name !== undefined) updateData.name = String(body.name).trim()
     if (body.description !== undefined) updateData.description = String(body.description).trim()
     if (body.price !== undefined) updateData.price = Number(body.price)
-    if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice ? Number(body.originalPrice) : null
+    if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice !== null && body.originalPrice !== '' ? Number(body.originalPrice) : null
     if (body.category !== undefined) updateData.category = String(body.category).trim()
     if (body.stock !== undefined) updateData.stock = Number(body.stock)
     if (body.status !== undefined) updateData.status = String(body.status)
@@ -189,27 +185,32 @@ export async function PUT(req: NextRequest) {
       updateData.colors = Array.isArray(body.colors) ? JSON.stringify(body.colors) : typeof body.colors === 'string' ? body.colors : '[]'
     }
 
+    let existingProduct = await db.product.findUnique({ where: { id } }).catch(() => null)
+    if (!existingProduct && updateData.name) {
+      existingProduct = await db.product.findFirst({ where: { name: String(updateData.name) } }).catch(() => null)
+    }
+
     let product
-    try {
+    if (existingProduct) {
       product = await db.product.update({
-        where: { id },
+        where: { id: existingProduct.id },
         data: updateData,
       })
-    } catch {
-      // If product id doesn't exist in DB yet (e.g. fallback product), create it!
+    } else {
       product = await db.product.create({
         data: {
-          id,
           name: String(updateData.name || 'Product'),
           description: String(updateData.description || ''),
           price: Number(updateData.price) || 0,
-          originalPrice: updateData.originalPrice ? Number(updateData.originalPrice) : null,
+          originalPrice: updateData.originalPrice !== null ? Number(updateData.originalPrice) : null,
           category: String(updateData.category || "Women's Fashion"),
           stock: Number(updateData.stock) || 25,
           image: String(updateData.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=667&fit=crop&q=80'),
-          status: 'active',
+          status: String(updateData.status || 'active'),
           sizes: String(updateData.sizes || '[]'),
           colors: String(updateData.colors || '[]'),
+          isFeatured: Boolean(updateData.isFeatured),
+          isNew: Boolean(updateData.isNew),
         },
       })
     }
@@ -230,7 +231,11 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    await db.product.delete({ where: { id } }).catch(() => {})
+    const existingProduct = await db.product.findUnique({ where: { id } }).catch(() => null)
+    if (existingProduct) {
+      await db.product.delete({ where: { id: existingProduct.id } }).catch(() => {})
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Error deleting product:', err)
