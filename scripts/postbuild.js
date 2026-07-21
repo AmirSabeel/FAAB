@@ -23,5 +23,6 @@ function copyDir(src, dest) {
 const root = process.cwd()
 copyDir(path.join(root, '.next/static'), path.join(root, '.next/standalone/.next/static'))
 copyDir(path.join(root, 'public'), path.join(root, '.next/standalone/public'))
+copyDir(path.join(root, 'prisma'), path.join(root, '.next/standalone/prisma'))
 
-console.log('✓ Copied static and public into standalone output')
+console.log('✓ Copied static, public, and prisma into standalone output')
