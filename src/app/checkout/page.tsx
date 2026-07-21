@@ -605,6 +605,41 @@ export default function CheckoutPage() {
                       </div>
                     </button>
 
+                    {/* COD Details */}
+                    <AnimatePresence>
+                      {paymentMethod === 'cod' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mx-1 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <Truck className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Cash on Delivery</p>
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                                  Keep exact change ready. Our delivery partner will collect <span className="font-semibold">{formatPrice(total)}</span> when the order arrives.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                              <div className="bg-white/60 dark:bg-white/5 rounded-lg p-2.5 text-center">
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider">Delivery Time</p>
+                                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mt-0.5">3–5 Days</p>
+                              </div>
+                              <div className="bg-white/60 dark:bg-white/5 rounded-lg p-2.5 text-center">
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider">COD Charges</p>
+                                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mt-0.5">Free</p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {/* UPI */}
                     <button
                       onClick={() => setPaymentMethod('upi')}
@@ -623,7 +658,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">UPI Payment</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Pay via Google Pay, PhonePe, or any UPI app</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Google Pay, PhonePe, Paytm, BHIM</p>
                       </div>
                       <div className={cn(
                         'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
@@ -663,40 +698,45 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Trust badges */}
-                  <div className="mt-6 p-4 rounded-xl bg-muted/30 space-y-2">
+                  <div className="mt-5 p-3 rounded-xl bg-muted/30 flex items-center justify-around gap-2">
                     {TRUST_FEATURES.map((f) => (
-                      <div key={f.text} className="flex items-center gap-2.5">
-                        <f.icon className="w-4 h-4 text-gold shrink-0" />
-                        <span className="text-xs text-muted-foreground">{f.text}</span>
+                      <div key={f.text} className="flex flex-col items-center gap-1 text-center">
+                        <f.icon className="w-4 h-4 text-gold" />
+                        <span className="text-[10px] text-muted-foreground leading-tight max-w-[70px]">{f.text}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-3 mt-6">
-                    <button
-                      onClick={goBack}
-                      className="h-11 px-6 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center gap-2 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back
-                    </button>
+                  {/* Place Order */}
+                  <div className="mt-5 space-y-3">
                     <button
                       onClick={handlePlaceOrder}
                       disabled={placing}
-                      className="flex-1 h-11 rounded-2xl gradient-gold text-white text-sm font-medium btn-ripple flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                      className="w-full h-14 rounded-2xl gradient-gold text-white font-semibold text-base btn-ripple flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-luxury-lg hover:shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99]"
                     >
                       {placing ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           Placing Order...
                         </>
                       ) : (
                         <>
-                          <Lock className="w-4 h-4" />
+                          <Lock className="w-5 h-5" />
                           Place Order — {formatPrice(total)}
                         </>
                       )}
                     </button>
+                    <button
+                      onClick={goBack}
+                      className="w-full h-10 rounded-2xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 cursor-pointer text-muted-foreground"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Back to Shipping
+                    </button>
+                    <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                      <Lock className="w-3 h-3" />
+                      Your info is encrypted and secure
+                    </p>
                   </div>
                 </motion.div>
               )}
