@@ -15,7 +15,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['*'],
+  allowedDevOrigins: [
+    '*.space-z.ai',
+    '*.chatglm.cn',
+  ],
 };
 
 export default nextConfig;
