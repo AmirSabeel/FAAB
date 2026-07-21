@@ -207,17 +207,20 @@ export function AdminProducts() {
         method,
         body: JSON.stringify(editingProduct ? { id: editingProduct.id, ...body } : body),
       })
-      if (!res.ok) throw new Error('Failed to save product')
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.error || 'Failed to save product')
+      }
       return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] })
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
-      toast.success(editingProduct ? 'Product updated' : 'Product created')
+      toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully')
       closeModal()
     },
-    onError: () => {
-      toast.error('Failed to save product')
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to save product')
     },
   })
 
@@ -325,31 +328,37 @@ export function AdminProducts() {
   }, [])
 
   async function handleSave() {
-    if (!form.name.trim() || !form.price) {
-      toast.error('Name and price are required')
+    if (!form.name.trim()) {
+      toast.error('Product name is required')
       return
     }
-    if (!form.image.trim()) {
-      toast.error('Please upload a product image')
+    if (!form.price || isNaN(parseFloat(form.price))) {
+      toast.error('Valid price is required')
       return
     }
+
     setSaving(true)
-    const body: Record<string, unknown> = {
-      name: form.name.trim(),
-      description: form.description.trim() || null,
-      price: parseFloat(form.price),
-      originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null,
-      category: form.category,
-      stock: parseInt(form.stock) || 0,
-      image: form.image.trim() || '',
-      isFeatured: form.isFeatured,
-      isNew: form.isNew,
-      status: 'active',
-      sizes: form.sizes,
-      colors: form.colors,
+    try {
+      const body: Record<string, unknown> = {
+        name: form.name.trim(),
+        description: form.description.trim() || '',
+        price: parseFloat(form.price),
+        originalPrice: form.originalPrice && !isNaN(parseFloat(form.originalPrice)) ? parseFloat(form.originalPrice) : null,
+        category: form.category || "Women's Fashion",
+        stock: parseInt(form.stock) || 0,
+        image: form.image.trim() || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=667&fit=crop&q=80',
+        isFeatured: form.isFeatured,
+        isNew: form.isNew,
+        status: 'active',
+        sizes: form.sizes,
+        colors: form.colors,
+      }
+      await saveMutation.mutateAsync(body)
+    } catch {
+      // Error handled by mutation onError
+    } finally {
+      setSaving(false)
     }
-    await saveMutation.mutateAsync(body)
-    setSaving(false)
   }
 
   async function handleDelete() {
@@ -896,7 +905,7 @@ export function AdminProducts() {
             </button>
             <button
               onClick={handleSave}
-              disabled={saving || !form.name.trim() || !form.price}
+              disabled={saving}
               className="h-10 px-5 rounded-xl gradient-gold text-white text-sm font-medium btn-ripple disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {saving
