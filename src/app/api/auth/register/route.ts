@@ -22,9 +22,13 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password } = parsed.data
+    const normalizedEmail = email.toLowerCase().trim()
 
-    // Check if user already exists
-    const existingUser = await db.user.findUnique({ where: { email } })
+    // Check if user already exists in User table
+    const existingUser = await db.user.findFirst({
+      where: { email: { equals: normalizedEmail } },
+    })
+
     if (existingUser) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
@@ -36,20 +40,19 @@ export async function POST(req: Request) {
 
     const user = await db.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: normalizedEmail,
         password: hashedPassword,
         role: 'customer',
       },
     })
 
-    // Also create a Customer record for backward compatibility
-    await db.customer.create({
-      data: {
-        name,
-        email,
-      },
-    })
+    // Safely create or update Customer record for backward compatibility
+    await db.customer.upsert({
+      where: { email: normalizedEmail },
+      update: { name: name.trim() },
+      create: { name: name.trim(), email: normalizedEmail },
+    }).catch(() => {})
 
     return NextResponse.json(
       {
@@ -58,10 +61,10 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Something went wrong. Please try again.' },
+      { error: error?.message || 'Something went wrong. Please try again.' },
       { status: 500 }
     )
   }
