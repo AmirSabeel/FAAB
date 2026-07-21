@@ -7,14 +7,14 @@ export async function GET(req: NextRequest) {
   if (error) return error
 
   try {
-    const [totalRevenue, orderCount, customerCount, productCount, recentOrders, topProducts, statusBreakdown] = await Promise.all([
+    const [totalRevenue, orderCount, customerCount, productCount, recentOrders, topProductsRaw, statusBreakdownRaw] = await Promise.all([
       db.order.aggregate({ _sum: { total: true }, where: { status: { not: 'cancelled' } } }),
       db.order.count(),
       db.customer.count(),
       db.product.count(),
       db.order.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { customer: { select: { name: true, email: true } }, items: true } }),
-      db.orderItem.groupBy({ by: ['productName'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 5 }),
-      db.order.groupBy({ by: ['status'], _count: true }),
+      db.orderItem.groupBy({ by: ['productName'], _sum: { quantity: true, price: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 5 }).catch(() => []),
+      db.order.groupBy({ by: ['status'], _count: true }).catch(() => []),
     ])
 
     const sixMonthsAgo = new Date()
@@ -29,29 +29,34 @@ export async function GET(req: NextRequest) {
       monthlyRevenue[key] = (monthlyRevenue[key] || 0) + o.total
     }
 
-    const avgOrderValue = orderCount > 0 ? (totalRevenue._sum.total || 0) / orderCount : 0
+    const revenueVal = totalRevenue?._sum?.total || 0
+    const countVal = orderCount || 0
+    const avgOrderValue = countVal > 0 ? revenueVal / countVal : 0
 
     return NextResponse.json({
-      totalRevenue: totalRevenue._sum.total || 0,
-      orderCount,
-      customerCount,
-      productCount,
+      totalRevenue: revenueVal,
+      orderCount: countVal,
+      customerCount: customerCount || 0,
+      productCount: productCount || 0,
       avgOrderValue: Math.round(avgOrderValue * 100) / 100,
-      recentOrders: recentOrders.map(o => ({
+      recentOrders: (recentOrders || []).map(o => ({
         id: o.id,
         orderNumber: o.orderNumber,
-        customerName: o.customer.name,
+        customerName: o.customer?.name || 'Guest',
         status: o.status,
         total: o.total,
-        itemCount: o.items.length,
+        itemCount: o.items ? o.items.length : 0,
         createdAt: o.createdAt,
       })),
-      topProducts: topProducts.map(p => ({
+      topProducts: (topProductsRaw || []).map(p => ({
         name: p.productName,
-        sold: p._sum.quantity,
-        revenue: p._sum.price,
+        sold: p._sum?.quantity || 0,
+        revenue: p._sum?.price || 0,
       })),
-      statusBreakdown: statusBreakdown.map(s => ({ status: s.status, count: s._count })),
+      statusBreakdown: (statusBreakdownRaw || []).map(s => ({
+        status: s.status,
+        count: typeof s._count === 'number' ? s._count : 0,
+      })),
       monthlyRevenue: Object.entries(monthlyRevenue).map(([month, revenue]) => ({ month, revenue: Math.round(revenue * 100) / 100 })).sort(),
     })
   } catch (e) {

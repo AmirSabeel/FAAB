@@ -19,15 +19,20 @@ export async function GET(req: NextRequest) {
     ]
   }
 
-  const [customers, total] = await Promise.all([
-    db.customer.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    }),
-    db.customer.count({ where }),
-  ])
+  try {
+    const [customers, total] = await Promise.all([
+      db.customer.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      db.customer.count({ where }),
+    ])
 
-  return NextResponse.json({ customers, total, page, totalPages: Math.ceil(total / limit) })
+    return NextResponse.json({ customers, total, page, totalPages: Math.ceil(total / limit) })
+  } catch (err) {
+    console.error('Error fetching admin customers:', err)
+    return NextResponse.json({ customers: [], total: 0, page: 1, totalPages: 1 })
+  }
 }

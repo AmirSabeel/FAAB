@@ -27,12 +27,14 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; group: string; label
 ]
 
 async function ensureDefaults() {
-  for (const def of DEFAULT_SETTINGS) {
-    await db.siteSetting.upsert({
-      where: { key: def.key },
-      update: {},
-      create: def,
-    })
+  const existing = await db.siteSetting.findMany({ select: { key: true } })
+  const existingKeys = new Set(existing.map((s) => s.key))
+
+  const missing = DEFAULT_SETTINGS.filter((def) => !existingKeys.has(def.key))
+  if (missing.length > 0) {
+    for (const def of missing) {
+      await db.siteSetting.create({ data: def }).catch(() => {})
+    }
   }
 }
 
@@ -48,7 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ settings })
   } catch (err) {
     console.error('Settings GET error:', err)
-    return NextResponse.json({ error: 'Failed to load settings' }, { status: 500 })
+    return NextResponse.json({ settings: DEFAULT_SETTINGS }, { status: 200 })
   }
 }
 
@@ -66,9 +68,17 @@ export async function PUT(req: NextRequest) {
 
     const results = await Promise.all(
       settings.map((s) =>
-        db.siteSetting.update({
+        db.siteSetting.upsert({
           where: { key: s.key },
-          data: { value: s.value },
+          update: { value: String(s.value) },
+          create: {
+            key: s.key,
+            value: String(s.value),
+            group: 'general',
+            label: s.key,
+            type: 'text',
+            order: 0,
+          },
         })
       )
     )
