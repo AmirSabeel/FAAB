@@ -30,6 +30,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAdminStore } from "./admin-store";
 
 interface AdminSidebarProps {
   activeTab: string;
@@ -183,10 +184,10 @@ function SidebarContent({
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-border">
-        <a
-          href="/"
+        <button
+          onClick={() => useAdminStore.getState().logoutAdmin()}
           className={cn(
-            "flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200",
+            "flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 w-full cursor-pointer",
             collapsed && "justify-center"
           )}
         >
@@ -199,7 +200,7 @@ function SidebarContent({
           >
             Back to Store
           </span>
-        </a>
+        </button>
       </div>
     </div>
   );
