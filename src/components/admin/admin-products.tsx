@@ -213,8 +213,8 @@ export function AdminProducts() {
       }
       return res.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['admin-products'] })
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
       toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully')
       closeModal()
