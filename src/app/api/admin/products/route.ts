@@ -5,30 +5,33 @@ import { ALL_PRODUCTS } from '@/data/products'
 
 async function ensureDefaultProducts() {
   const count = await db.product.count()
-  if (count === 0) {
+  if (count < ALL_PRODUCTS.length) {
     for (let i = 0; i < ALL_PRODUCTS.length; i++) {
       const p = ALL_PRODUCTS[i]
-      await db.product.create({
-        data: {
-          name: p.name,
-          description: p.description,
-          price: p.price,
-          originalPrice: p.originalPrice || null,
-          image: p.image,
-          category: p.category,
-          rating: p.rating || 4.8,
-          reviewCount: p.reviewCount || 10,
-          stock: 25,
-          status: 'active',
-          isFeatured: true,
-          isNew: p.isNew || false,
-          isTrending: p.id.startsWith('trend-'),
-          trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
-          newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
-          sizes: JSON.stringify(p.sizes || []),
-          colors: JSON.stringify(p.colors || []),
-        },
-      }).catch(() => {})
+      const existing = await db.product.findFirst({ where: { name: p.name } })
+      if (!existing) {
+        await db.product.create({
+          data: {
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            originalPrice: p.originalPrice || null,
+            image: p.image,
+            category: p.category,
+            rating: p.rating || 4.8,
+            reviewCount: p.reviewCount || 10,
+            stock: 25,
+            status: 'active',
+            isFeatured: true,
+            isNew: p.isNew || false,
+            isTrending: p.id.startsWith('trend-'),
+            trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
+            newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
+            sizes: JSON.stringify(p.sizes || []),
+            colors: JSON.stringify(p.colors || []),
+          },
+        }).catch(() => {})
+      }
     }
   }
 }
@@ -41,10 +44,10 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
   const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
+  const limit = parseInt(searchParams.get('limit') || '100')
 
   const where: Record<string, unknown> = {}
-  if (category && category !== 'all') where.category = category
+  if (category && category !== 'all' && category !== 'All') where.category = category
   if (search) where.name = { contains: search }
 
   try {
