@@ -5,26 +5,36 @@ import { requireAdmin } from '@/lib/admin-auth'
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
+
   try {
     const cats = await db.homepageCategory.findMany({ orderBy: { sortOrder: 'asc' } })
     return NextResponse.json(cats)
   } catch (e) {
     console.error('categories GET error:', e)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json([])
   }
 }
 
 export async function POST(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
+
   try {
     const body = await req.json()
-    const { name, image, link, sortOrder, isActive } = body
+    const name = String(body.name || '').trim()
+    const image = String(body.image || '').trim()
     if (!name || !image) {
       return NextResponse.json({ error: 'Name and image are required' }, { status: 400 })
     }
+
     const cat = await db.homepageCategory.create({
-      data: { name, image, link: link || '', sortOrder: sortOrder ?? 0, isActive: isActive ?? true },
+      data: {
+        name,
+        image,
+        link: body.link ? String(body.link).trim() : '',
+        sortOrder: Number(body.sortOrder) || 0,
+        isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
+      },
     })
     return NextResponse.json(cat, { status: 201 })
   } catch (e) {
@@ -36,10 +46,19 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
+
   try {
     const body = await req.json()
-    const { id, ...data } = body
+    const { id } = body
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+    const data: Record<string, unknown> = {}
+    if (body.name !== undefined) data.name = String(body.name).trim()
+    if (body.image !== undefined) data.image = String(body.image).trim()
+    if (body.link !== undefined) data.link = String(body.link).trim()
+    if (body.sortOrder !== undefined) data.sortOrder = Number(body.sortOrder)
+    if (body.isActive !== undefined) data.isActive = Boolean(body.isActive)
+
     const cat = await db.homepageCategory.update({ where: { id }, data })
     return NextResponse.json(cat)
   } catch (e) {
@@ -51,10 +70,12 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
+
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
     await db.homepageCategory.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (e) {
