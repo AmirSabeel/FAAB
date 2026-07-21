@@ -555,6 +555,27 @@ export default function CheckoutPage() {
                   <h2 className="text-lg font-semibold mb-1">Payment Method</h2>
                   <p className="text-sm text-muted-foreground mb-6">All transactions are secure and encrypted</p>
 
+                  {/* Review Summary */}
+                  <div className="mb-6 p-4 rounded-xl bg-muted/30 border border-border/40 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Contact</p>
+                        <p className="text-sm font-medium">{customer.firstName} {customer.lastName}</p>
+                        <p className="text-xs text-muted-foreground">{customer.email} · {customer.phone}</p>
+                      </div>
+                      <button onClick={() => { setDir(-1); setStep(0) }} className="text-xs text-gold hover:underline shrink-0 cursor-pointer">Edit</button>
+                    </div>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Ship to</p>
+                        <p className="text-sm font-medium">{customer.address}</p>
+                        <p className="text-xs text-muted-foreground">{customer.city}, {customer.state} {customer.pincode}</p>
+                      </div>
+                      <button onClick={() => { setDir(-1); setStep(1) }} className="text-xs text-gold hover:underline shrink-0 cursor-pointer">Edit</button>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     {/* Cash on Delivery */}
                     <button
@@ -731,9 +752,23 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 {shippingCost > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Add {formatPrice(2999 - subtotal)} more for free shipping
-                  </p>
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      Add {formatPrice(2999 - subtotal)} more for free shipping
+                    </p>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full gradient-gold rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((subtotal / 2999) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                {shippingCost === 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                    <Check className="w-3.5 h-3.5" />
+                    You qualify for free shipping!
+                  </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Tax (GST {taxRate}%)</span>
@@ -743,20 +778,17 @@ export default function CheckoutPage() {
 
               <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
                 <span className="text-base font-semibold">Total</span>
-                <span className="text-lg font-semibold">{formatPrice(total)}</span>
+                <span className="text-xl font-semibold text-gold">{formatPrice(total)}</span>
               </div>
 
-              {/* Promo Code */}
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Promo code"
-                    className="rounded-xl text-sm h-10"
-                  />
-                  <button className="h-10 px-4 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors shrink-0 cursor-pointer">
-                    Apply
-                  </button>
-                </div>
+              {/* Trust Badges */}
+              <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+                {TRUST_FEATURES.map((f) => (
+                  <div key={f.text} className="flex items-center gap-2">
+                    <f.icon className="w-3.5 h-3.5 text-gold shrink-0" />
+                    <span className="text-xs text-muted-foreground">{f.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
