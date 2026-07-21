@@ -53,6 +53,7 @@ export default function ProductCard({
   isNew,
   onQuickView,
 }: ProductCardProps) {
+  const [addedToCart, setAddedToCart] = useState(false);
   const overrides = useProductOverridesStore((s) => s.overrides);
   const override = overrides[name.toLowerCase().trim()] || overrides[id];
 
