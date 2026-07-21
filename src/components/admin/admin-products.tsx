@@ -213,7 +213,21 @@ export function AdminProducts() {
       }
       return res.json()
     },
-    onSuccess: async () => {
+    onSuccess: async (updatedProduct: any) => {
+      queryClient.setQueriesData({ queryKey: ['admin-products'] }, (oldData: any) => {
+        if (!oldData || !Array.isArray(oldData.products)) return oldData
+        const updatedList = oldData.products.map((p: any) => {
+          if (
+            (updatedProduct.id && p.id === updatedProduct.id) ||
+            (updatedProduct.name && p.name.toLowerCase().trim() === updatedProduct.name.toLowerCase().trim())
+          ) {
+            return { ...p, ...updatedProduct }
+          }
+          return p
+        })
+        return { ...oldData, products: updatedList }
+      })
+
       await queryClient.refetchQueries({ queryKey: ['admin-products'] })
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] })
       toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully')
