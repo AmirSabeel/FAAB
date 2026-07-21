@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { ALL_PRODUCTS } from '@/data/products'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // In-memory store for fallback overrides when DB is read-only on Vercel
 const memoryOverrides = new Map<string, any>()
 

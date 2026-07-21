@@ -2,6 +2,9 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { ALL_PRODUCTS } from '@/data/products'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 function safeParseJSON<T>(str: string, fallback: T): T {
   try {
     const parsed = JSON.parse(str)
@@ -30,44 +33,58 @@ export async function GET(
   }
 
   if (!product && fallbackMatch) {
-    return NextResponse.json({
-      id: fallbackMatch.id,
-      name: fallbackMatch.name,
-      description: fallbackMatch.description || '',
-      price: fallbackMatch.price,
-      originalPrice: fallbackMatch.originalPrice || null,
-      image: fallbackMatch.image,
-      images: fallbackMatch.images || [fallbackMatch.image],
-      category: fallbackMatch.category,
-      rating: fallbackMatch.rating || 4.8,
-      reviewCount: fallbackMatch.reviewCount || 10,
-      stock: 25,
-      isNew: fallbackMatch.isNew || false,
-      isFeatured: true,
-      sizes: fallbackMatch.sizes || [],
-      colors: fallbackMatch.colors || [],
-    })
+    return NextResponse.json(
+      {
+        id: fallbackMatch.id,
+        name: fallbackMatch.name,
+        description: fallbackMatch.description || '',
+        price: fallbackMatch.price,
+        originalPrice: fallbackMatch.originalPrice || null,
+        image: fallbackMatch.image,
+        images: fallbackMatch.images || [fallbackMatch.image],
+        category: fallbackMatch.category,
+        rating: fallbackMatch.rating || 4.8,
+        reviewCount: fallbackMatch.reviewCount || 10,
+        stock: 25,
+        isNew: fallbackMatch.isNew || false,
+        isFeatured: true,
+        sizes: fallbackMatch.sizes || [],
+        colors: fallbackMatch.colors || [],
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
+      }
+    )
   }
 
   if (!product) {
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
 
-  return NextResponse.json({
-    id: product.id,
-    name: product.name,
-    description: product.description || '',
-    price: product.price,
-    originalPrice: product.originalPrice,
-    image: product.image,
-    images: [product.image],
-    category: product.category,
-    rating: product.rating,
-    reviewCount: product.reviewCount,
-    stock: product.stock,
-    isNew: product.isNew,
-    isFeatured: product.isFeatured,
-    sizes: safeParseJSON<string[]>(product.sizes, []),
-    colors: safeParseJSON<{ name: string; hex: string }[]>(product.colors, []),
-  })
+  return NextResponse.json(
+    {
+      id: product.id,
+      name: product.name,
+      description: product.description || '',
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      images: [product.image],
+      category: product.category,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      stock: product.stock,
+      isNew: product.isNew,
+      isFeatured: product.isFeatured,
+      sizes: safeParseJSON<string[]>(product.sizes, []),
+      colors: safeParseJSON<{ name: string; hex: string }[]>(product.colors, []),
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    }
+  )
 }

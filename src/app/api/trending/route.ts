@@ -2,6 +2,9 @@ import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { ALL_PRODUCTS } from '@/data/products'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const FALLBACK_TRENDING_ITEMS = ALL_PRODUCTS.slice(0, 8).map((p) => ({
   id: p.id,
   name: p.name,
@@ -40,9 +43,17 @@ export async function GET() {
       return item
     })
 
-    return NextResponse.json(merged)
+    return NextResponse.json(merged, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   } catch (e) {
     console.error('Trending GET error:', e)
-    return NextResponse.json(FALLBACK_TRENDING_ITEMS)
+    return NextResponse.json(FALLBACK_TRENDING_ITEMS, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   }
 }

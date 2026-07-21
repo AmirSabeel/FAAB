@@ -2,6 +2,9 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { ALL_PRODUCTS } from '@/data/products'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const CATEGORIES = [
   "Women's Fashion",
   "Men's Fashion",
@@ -97,21 +100,35 @@ export async function GET(req: NextRequest) {
     const total = filtered.length
     const paginated = filtered.slice((page - 1) * limit, page * limit)
 
-    return NextResponse.json({
-      products: paginated,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit) || 1,
-      categories: CATEGORIES,
-    })
+    return NextResponse.json(
+      {
+        products: paginated,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit) || 1,
+        categories: CATEGORIES,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
+      }
+    )
   } catch (err) {
     console.error('Error in public products API:', err)
-    return NextResponse.json({
-      products: FALLBACK_PUBLIC_PRODUCTS,
-      total: FALLBACK_PUBLIC_PRODUCTS.length,
-      page: 1,
-      totalPages: 1,
-      categories: CATEGORIES,
-    })
+    return NextResponse.json(
+      {
+        products: FALLBACK_PUBLIC_PRODUCTS,
+        total: FALLBACK_PUBLIC_PRODUCTS.length,
+        page: 1,
+        totalPages: 1,
+        categories: CATEGORIES,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
+      }
+    )
   }
 }
