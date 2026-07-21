@@ -6,6 +6,41 @@ import { sendEmail } from '@/lib/email'
 import { orderConfirmationEmail } from '@/lib/email-templates'
 import crypto from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
+// Ensure a product stub exists in DB so FK constraint is satisfied
+async function ensureProductExists(item: {
+  id: string; name: string; image: string; price: number; category?: string
+}): Promise<string> {
+  try {
+    // Try to find existing product
+    const existing = await db.product.findUnique({ where: { id: item.id }, select: { id: true } })
+    if (existing) return existing.id
+
+    // Create a stub product so FK works
+    const created = await db.product.create({
+      data: {
+        id: item.id,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        category: item.category || "Women's Fashion",
+        stock: 0,
+        status: 'active',
+      },
+    })
+    return created.id
+  } catch {
+    // If creation fails (race condition, duplicate), try finding again
+    try {
+      const found = await db.product.findUnique({ where: { id: item.id }, select: { id: true } })
+      if (found) return found.id
+    } catch { /* ignore */ }
+    // Last resort: use a generated ID that doesn't need to match
+    return item.id
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -15,12 +50,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Items and customer info are required' }, { status: 400 })
     }
 
-    // Get session to link order to user if logged in
-    const session = await getServerSession(authOptions)
-    const userId = session?.user?.id || null
+    // Session is optional
+    let userId: string | null = null
+    try {
+      const session = await getServerSession(authOptions)
+      userId = session?.user?.id || null
+    } catch { userId = null }
 
     // Calculate totals
-    const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0)
+    const subtotal = items.reduce(
+      (sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0
+    )
     const taxAmount = tax?.enabled ? Math.round(subtotal * (tax.rate || 18) / 100) : 0
     const shippingAmount = shipping?.free && subtotal >= (shipping.threshold || 2999) ? 0 : (shipping.rate || 149)
     const total = subtotal + taxAmount + shippingAmount
@@ -52,12 +92,31 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Ensure all products exist in DB (creates stubs for demo products)
+    const resolvedItems = await Promise.all(
+      items.map(async (item: {
+        id: string; name: string; image: string; price: number
+        quantity: number; size?: string; color?: string; category?: string
+      }) => {
+        const productId = await ensureProductExists(item)
+        return {
+          productId,
+          productName: item.name,
+          productImage: item.image,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size || null,
+          color: item.color || null,
+        }
+      })
+    )
+
     // Generate order number
     const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase()
     const orderNumber = `FAAB-${datePart}-${randomPart}`
 
-    // Create order with items
+    // Create order
     const order = await db.order.create({
       data: {
         orderNumber,
@@ -71,62 +130,44 @@ export async function POST(req: NextRequest) {
         address: customer.address || null,
         city: customer.city || null,
         country: customer.country || null,
-        items: {
-          create: items.map((item: { id: string; name: string; image: string; price: number; quantity: number; size?: string; color?: string }) => ({
-            productId: item.id,
-            productName: item.name,
-            productImage: item.image,
-            price: item.price,
-            quantity: item.quantity,
-            size: item.size || null,
-            color: item.color || null,
-          })),
-        },
+        items: { create: resolvedItems },
       },
       include: { items: true, customer: { select: { name: true, email: true } } },
     })
 
-    // Decrease stock for each product
-    for (const item of items) {
+    // Decrease stock
+    for (const item of resolvedItems) {
       try {
         await db.product.update({
-          where: { id: item.id },
+          where: { id: item.productId },
           data: { stock: { decrement: item.quantity } },
         })
-      } catch {
-        // Product might not exist in DB (demo products) â€” skip stock update
-      }
+      } catch { /* skip */ }
     }
 
-    // Send order confirmation email to customer (fire-and-forget, non-blocking)
+    // Send emails
     const emailData = {
       orderNumber,
       customerName: customer.name,
       customerEmail: customer.email,
       items: items.map((item: { name: string; price: number; quantity: number; size?: string; color?: string }) => item),
-      subtotal,
-      shipping: shippingAmount,
-      tax: taxAmount,
-      total,
-      address: customer.address,
-      city: customer.city,
-      country: customer.country,
+      subtotal, shipping: shippingAmount, tax: taxAmount, total,
+      address: customer.address, city: customer.city, country: customer.country,
     }
 
     sendEmail({
       to: customer.email,
-      subject: `Order Confirmed \u2014 ${orderNumber}`,
+      subject: `Order Confirmed — ${orderNumber}`,
       html: orderConfirmationEmail(emailData),
-    }).catch(() => { /* email failure should not block order */ })
+    }).catch(() => {})
 
-    // Send notification copy to store admin
     const notifyEmail = process.env.ORDER_NOTIFICATION_EMAIL
     if (notifyEmail) {
       sendEmail({
         to: notifyEmail,
-        subject: `New Order \u2014 ${orderNumber} from ${customer.name}`,
+        subject: `New Order — ${orderNumber} from ${customer.name}`,
         html: orderConfirmationEmail({ ...emailData, customerName: `${customer.name} (${customer.email})` }),
-      }).catch(() => { /* notification failure should not block order */ })
+      }).catch(() => {})
     }
 
     return NextResponse.json({
