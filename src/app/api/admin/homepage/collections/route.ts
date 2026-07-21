@@ -1,6 +1,8 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+
+export const dynamic = 'force-dynamic'
 
 const DEFAULT_COLLECTIONS = [
   { name: 'Summer Essentials', itemCount: 12, image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80', link: '/shop', sortOrder: 0 },
@@ -101,3 +103,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete collection' }, { status: 500 })
   }
 }
+

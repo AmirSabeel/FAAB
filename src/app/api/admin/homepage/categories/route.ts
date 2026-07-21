@@ -1,6 +1,8 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+
+export const dynamic = 'force-dynamic'
 
 const DEFAULT_CATEGORIES = [
   { name: "Women's Fashion", image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop&q=80', link: "/shop?category=Women's Fashion", sortOrder: 0 },
@@ -102,3 +104,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 })
   }
 }
+

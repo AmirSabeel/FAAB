@@ -1,6 +1,8 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+
+export const dynamic = 'force-dynamic'
 import { sendEmail } from '@/lib/email'
 import { orderStatusUpdateEmail } from '@/lib/email-templates'
 
@@ -64,7 +66,7 @@ export async function PATCH(req: NextRequest) {
     if (order.customer?.email) {
       sendEmail({
         to: order.customer.email,
-        subject: `Order Update — ${order.orderNumber}`,
+        subject: `Order Update â€” ${order.orderNumber}`,
         html: orderStatusUpdateEmail({
           orderNumber: order.orderNumber,
           customerName: order.customer.name,

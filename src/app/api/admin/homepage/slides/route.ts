@@ -1,6 +1,8 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+
+export const dynamic = 'force-dynamic'
 
 const DEFAULT_SLIDES = [
   {
@@ -23,7 +25,7 @@ const DEFAULT_SLIDES = [
   },
   {
     title: 'Define\nYour Style',
-    subtitle: 'From runway to everyday — express your individuality with pieces that speak louder than words.',
+    subtitle: 'From runway to everyday â€” express your individuality with pieces that speak louder than words.',
     ctaText: 'Discover More',
     ctaLink: '/shop',
     image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&q=80',
@@ -127,3 +129,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete slide' }, { status: 500 })
   }
 }
+

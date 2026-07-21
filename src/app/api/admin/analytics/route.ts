@@ -2,6 +2,9 @@ import { db } from '@/lib/db'
 import { NextResponse, NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error

@@ -1,6 +1,8 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+
+export const dynamic = 'force-dynamic'
 
 const DEFAULT_SETTINGS: Array<{ key: string; value: string; group: string; label: string; type: string; order: number }> = [
   { key: 'store_name', value: 'FAAB', group: 'general', label: 'Store Name', type: 'text', order: 0 },
@@ -9,11 +11,11 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; group: string; label
   { key: 'store_phone', value: '+91 98765 43210', group: 'general', label: 'Contact Phone', type: 'text', order: 3 },
   { key: 'store_address', value: 'Mumbai, Maharashtra, India', group: 'general', label: 'Store Address', type: 'textarea', order: 4 },
   { key: 'store_currency', value: 'INR', group: 'general', label: 'Currency', type: 'select', order: 5 },
-  { key: 'store_currency_symbol', value: '₹', group: 'general', label: 'Currency Symbol', type: 'text', order: 6 },
+  { key: 'store_currency_symbol', value: 'â‚¹', group: 'general', label: 'Currency Symbol', type: 'text', order: 6 },
   { key: 'tax_rate', value: '18', group: 'tax_shipping', label: 'Tax Rate (%)', type: 'number', order: 0 },
   { key: 'tax_enabled', value: 'true', group: 'tax_shipping', label: 'Enable Tax', type: 'toggle', order: 1 },
-  { key: 'shipping_flat_rate', value: '149', group: 'tax_shipping', label: 'Flat Shipping Rate (₹)', type: 'number', order: 2 },
-  { key: 'free_shipping_threshold', value: '2999', group: 'tax_shipping', label: 'Free Shipping Above (₹)', type: 'number', order: 3 },
+  { key: 'shipping_flat_rate', value: '149', group: 'tax_shipping', label: 'Flat Shipping Rate (â‚¹)', type: 'number', order: 2 },
+  { key: 'free_shipping_threshold', value: '2999', group: 'tax_shipping', label: 'Free Shipping Above (â‚¹)', type: 'number', order: 3 },
   { key: 'free_shipping_enabled', value: 'true', group: 'tax_shipping', label: 'Enable Free Shipping Threshold', type: 'toggle', order: 4 },
   { key: 'social_instagram', value: 'https://instagram.com/faab', group: 'social', label: 'Instagram URL', type: 'text', order: 0 },
   { key: 'social_facebook', value: 'https://facebook.com/faab', group: 'social', label: 'Facebook URL', type: 'text', order: 1 },
@@ -89,3 +91,4 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
   }
 }
+

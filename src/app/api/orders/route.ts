@@ -1,4 +1,4 @@
-import { db } from '@/lib/db'
+﻿import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
           data: { stock: { decrement: item.quantity } },
         })
       } catch {
-        // Product might not exist in DB (demo products) — skip stock update
+        // Product might not exist in DB (demo products) â€” skip stock update
       }
     }
 
