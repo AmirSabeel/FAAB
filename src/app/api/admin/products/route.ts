@@ -52,7 +52,7 @@ async function ensureDefaultProducts() {
       }
     }
   } catch {
-    // catch any table or filesystem error
+    // ignore
   }
 }
 
@@ -66,35 +66,56 @@ export async function GET(req: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '100')
 
-  const where: Record<string, unknown> = {}
-  if (category && category !== 'all' && category !== 'All') where.category = category
-  if (search) where.name = { contains: search }
-
   try {
     await ensureDefaultProducts()
-    let [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      db.product.count({ where }),
-    ])
 
-    if (!products || products.length === 0) {
-      let filtered = FALLBACK_ADMIN_PRODUCTS
-      if (category && category !== 'all' && category !== 'All') {
-        filtered = filtered.filter((p) => p.category === category)
+    // 1. Fetch all DB products
+    const dbProducts = await db.product.findMany({
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => [])
+
+    // 2. Map existing DB products by name and id
+    const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
+    const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
+
+    // 3. Build merged list
+    const mergedList: Array<any> = []
+    const processedDbIds = new Set<string>()
+
+    for (const fallback of FALLBACK_ADMIN_PRODUCTS) {
+      const match = dbMapByName.get(fallback.name.toLowerCase().trim()) || dbMapById.get(fallback.id)
+      if (match) {
+        mergedList.push(match)
+        processedDbIds.add(match.id)
+      } else {
+        mergedList.push(fallback)
       }
-      if (search) {
-        filtered = filtered.filter((p) => p.name.toLowerCase().includes(search))
-      }
-      total = filtered.length
-      products = filtered.slice((page - 1) * limit, page * limit) as any
     }
 
-    return NextResponse.json({ products, total, page, totalPages: Math.ceil(total / limit) || 1 })
+    for (const dbP of dbProducts) {
+      if (!processedDbIds.has(dbP.id)) {
+        mergedList.push(dbP)
+      }
+    }
+
+    // 4. Apply category & search filters
+    let filtered = mergedList
+    if (category && category !== 'all' && category !== 'All') {
+      filtered = filtered.filter((p) => p.category === category)
+    }
+    if (search) {
+      filtered = filtered.filter((p) => p.name.toLowerCase().includes(search))
+    }
+
+    const total = filtered.length
+    const paginated = filtered.slice((page - 1) * limit, page * limit)
+
+    return NextResponse.json({
+      products: paginated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit) || 1,
+    })
   } catch (err) {
     console.error('Error fetching admin products:', err)
     let filtered = FALLBACK_ADMIN_PRODUCTS
@@ -202,7 +223,7 @@ export async function PUT(req: NextRequest) {
           name: String(updateData.name || 'Product'),
           description: String(updateData.description || ''),
           price: Number(updateData.price) || 0,
-          originalPrice: updateData.originalPrice !== null ? Number(updateData.originalPrice) : null,
+          originalPrice: updateData.originalPrice !== null && updateData.originalPrice !== undefined ? Number(updateData.originalPrice) : null,
           category: String(updateData.category || "Women's Fashion"),
           stock: Number(updateData.stock) || 25,
           image: String(updateData.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=667&fit=crop&q=80'),
