@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Users } from 'lucide-react'
+import { adminFetch } from '@/lib/admin-fetch'
 
 // ---------- Types ----------
 
@@ -56,7 +57,7 @@ export function AdminCustomers() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-customers', search, page],
     queryFn: () =>
-      fetch(`/api/admin/customers?search=${encodeURIComponent(search)}&page=${page}`).then((r) => r.json()),
+      adminFetch(`/api/admin/customers?search=${encodeURIComponent(search)}&page=${page}`).then((r) => r.json()),
   })
 
   const customers: Customer[] = data?.customers ?? []

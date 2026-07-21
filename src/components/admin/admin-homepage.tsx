@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { adminFetch } from "@/lib/admin-fetch";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ function SlideManager() {
   const qc = useQueryClient();
   const { data: slides = [], isLoading } = useQuery<Slide[]>({
     queryKey: ["admin-slides"],
-    queryFn: () => fetch("/api/admin/homepage/slides").then((r) => r.json()),
+    queryFn: () => adminFetch("/api/admin/homepage/slides").then((r) => r.json()),
   });
 
   const [editing, setEditing] = useState<string | null>(null);
@@ -126,9 +127,8 @@ function SlideManager() {
 
   const saveMutation = useMutation({
     mutationFn: (data: Partial<Slide> & { id: string }) =>
-      fetch("/api/admin/homepage/slides", {
+      adminFetch("/api/admin/homepage/slides", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -142,9 +142,8 @@ function SlideManager() {
 
   const addMutation = useMutation({
     mutationFn: (data: Partial<Slide>) =>
-      fetch("/api/admin/homepage/slides", {
+      adminFetch("/api/admin/homepage/slides", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -157,7 +156,7 @@ function SlideManager() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/admin/homepage/slides?id=${id}`, { method: "DELETE" }).then(
+      adminFetch(`/api/admin/homepage/slides?id=${id}`, { method: "DELETE" }).then(
         (r) => r.json()
       ),
     onSuccess: () => {
@@ -406,7 +405,7 @@ function CategoryManager() {
   const { data: cats = [], isLoading } = useQuery<Category[]>({
     queryKey: ["admin-categories"],
     queryFn: () =>
-      fetch("/api/admin/homepage/categories").then((r) => r.json()),
+      adminFetch("/api/admin/homepage/categories").then((r) => r.json()),
   });
 
   const [editing, setEditing] = useState<string | null>(null);
@@ -414,9 +413,8 @@ function CategoryManager() {
 
   const saveMutation = useMutation({
     mutationFn: (data: Partial<Category> & { id: string }) =>
-      fetch("/api/admin/homepage/categories", {
+      adminFetch("/api/admin/homepage/categories", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -430,9 +428,8 @@ function CategoryManager() {
 
   const addMutation = useMutation({
     mutationFn: (data: Partial<Category>) =>
-      fetch("/api/admin/homepage/categories", {
+      adminFetch("/api/admin/homepage/categories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -445,7 +442,7 @@ function CategoryManager() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/admin/homepage/categories?id=${id}`, {
+      adminFetch(`/api/admin/homepage/categories?id=${id}`, {
         method: "DELETE",
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -608,7 +605,7 @@ function CollectionManager() {
   const { data: cols = [], isLoading } = useQuery<Collection[]>({
     queryKey: ["admin-collections"],
     queryFn: () =>
-      fetch("/api/admin/homepage/collections").then((r) => r.json()),
+      adminFetch("/api/admin/homepage/collections").then((r) => r.json()),
   });
 
   const [editing, setEditing] = useState<string | null>(null);
@@ -616,9 +613,8 @@ function CollectionManager() {
 
   const saveMutation = useMutation({
     mutationFn: (data: Partial<Collection> & { id: string }) =>
-      fetch("/api/admin/homepage/collections", {
+      adminFetch("/api/admin/homepage/collections", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -632,9 +628,8 @@ function CollectionManager() {
 
   const addMutation = useMutation({
     mutationFn: (data: Partial<Collection>) =>
-      fetch("/api/admin/homepage/collections", {
+      adminFetch("/api/admin/homepage/collections", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }).then((r) => r.json()),
     onSuccess: () => {
@@ -647,7 +642,7 @@ function CollectionManager() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/admin/homepage/collections?id=${id}`, {
+      adminFetch(`/api/admin/homepage/collections?id=${id}`, {
         method: "DELETE",
       }).then((r) => r.json()),
     onSuccess: () => {

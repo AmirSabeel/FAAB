@@ -2,15 +2,15 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
-export async function GET() {
-  const { error } = await requireAdmin()
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
   if (error) return error
   const cols = await db.homepageCollection.findMany({ orderBy: { sortOrder: 'asc' } })
   return NextResponse.json(cols)
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
   const body = await req.json()
   const { name, image, itemCount, link, sortOrder, isActive } = body
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
   const body = await req.json()
   const { id, ...data } = body
@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')

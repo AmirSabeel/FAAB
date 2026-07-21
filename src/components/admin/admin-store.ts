@@ -8,9 +8,10 @@ interface AdminState {
   sidebarCollapsed: boolean
   setSidebarCollapsed: (v: boolean) => void
   toggleSidebar: () => void
-  /** If non-null, admin APIs returned 401/403 — show a message */
   authError: string | null
   setAuthError: (msg: string | null) => void
+  passwordPromptOpen: boolean
+  setPasswordPromptOpen: (v: boolean) => void
 }
 
 export const useAdminStore = create<AdminState>((set) => ({
@@ -23,4 +24,6 @@ export const useAdminStore = create<AdminState>((set) => ({
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   authError: null,
   setAuthError: (msg) => set({ authError: msg }),
+  passwordPromptOpen: false,
+  setPasswordPromptOpen: (v) => set({ passwordPromptOpen: v }),
 }))

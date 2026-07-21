@@ -15,6 +15,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useAdminStore } from './admin-store'
+import { adminFetch } from '@/lib/admin-fetch'
 
 const kpiConfigs = [
   { key: 'totalRevenue', label: 'Total Revenue', icon: DollarSign, format: (v: number) => `₹${v.toLocaleString('en-IN')}`, subtitle: '+12% from last month' },
@@ -159,7 +160,7 @@ function formatMonth(monthStr: string) {
 export function AdminDashboard() {
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['admin-dashboard'],
-    queryFn: () => fetch('/api/admin/dashboard').then((r) => r.json()),
+    queryFn: () => adminFetch('/api/admin/dashboard').then((r) => r.json()),
   })
 
   const statusMax = data

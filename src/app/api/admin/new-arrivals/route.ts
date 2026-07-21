@@ -2,8 +2,8 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
-export async function GET() {
-  const { error } = await requireAdmin()
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   const products = await db.product.findMany({
@@ -14,7 +14,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   const body = await req.json()
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   const body = await req.json()
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   const { searchParams } = new URL(req.url)

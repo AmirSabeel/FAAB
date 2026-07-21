@@ -36,6 +36,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { adminFetch } from '@/lib/admin-fetch'
 
 const CATEGORIES = [
   "Women's Fashion",
@@ -191,7 +192,7 @@ export function AdminProducts() {
   }>({
     queryKey: ['admin-products', debouncedSearch, category, statusFilter, page],
     queryFn: () =>
-      fetch(
+      adminFetch(
         `/api/admin/products?search=${encodeURIComponent(debouncedSearch)}&category=${category === 'All' ? '' : category}&status=${statusFilter === 'All' ? '' : statusFilter.toLowerCase()}&page=${page}`
       ).then((r) => r.json()),
   })
@@ -201,9 +202,8 @@ export function AdminProducts() {
     mutationFn: async (body: Record<string, unknown>) => {
       const url = '/api/admin/products'
       const method = editingProduct ? 'PUT' : 'POST'
-      const res = await fetch(url, {
+      const res = await adminFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingProduct ? { id: editingProduct.id, ...body } : body),
       })
       if (!res.ok) throw new Error('Failed to save product')
@@ -223,7 +223,7 @@ export function AdminProducts() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/products?id=${id}`, { method: 'DELETE' })
+      const res = await adminFetch(`/api/admin/products?id=${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete')
       return res.json()
     },

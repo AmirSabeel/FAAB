@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useSyncExternalStore } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
 import { AdminHomepage } from '@/components/admin/admin-homepage'
@@ -27,9 +26,11 @@ import QuickViewModal from '@/components/quick-view-modal'
 import { WishlistDrawer } from '@/components/wishlist-drawer'
 import { AuthModal } from '@/components/auth-modal'
 import { ProfileDrawer } from '@/components/profile-drawer'
-import { ShoppingBag, LogOut, ShieldAlert } from 'lucide-react'
+import { ShoppingBag, Lock, Eye, EyeOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+
+const ADMIN_PASSWORD = '4444'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -41,13 +42,12 @@ function useHydrated() {
 }
 
 export default function Home() {
-  const { data: session, status } = useSession()
   const isAdmin = useAdminStore((s) => s.isAdmin)
   const setIsAdmin = useAdminStore((s) => s.setIsAdmin)
-  const setAuthError = useAdminStore((s) => s.setAuthError)
   const activeTab = useAdminStore((s) => s.activeTab)
-  const userRole = (session?.user as Record<string, unknown>)?.role as string | undefined
-  const canAdmin = userRole === 'admin'
+  const passwordPromptOpen = useAdminStore((s) => s.passwordPromptOpen)
+  const setPasswordPromptOpen = useAdminStore((s) => s.setPasswordPromptOpen)
+
   const [searchOpen, setSearchOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
   const [wishlistOpen, setWishlistOpen] = useState(false)
@@ -55,39 +55,39 @@ export default function Home() {
   const [quickViewProduct, setQuickViewProduct] = useState<null | { id: string; name: string; price: number; originalPrice?: number; image: string; rating: number; reviewCount: number; description?: string }>(null)
   const [authOpen, setAuthOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminPasswordError, setAdminPasswordError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const mounted = useHydrated()
   const { isOpen, close, toggle } = useMobileNav()
   const cartCount = useCartStore((s) => s.totalItems())
 
-  // Gate: must be logged in as admin to enter
   const handleAdminClick = useCallback(() => {
-    if (!session) {
-      setAuthOpen(true)
-      return
-    }
-    if (!canAdmin) {
-      setAuthError('Admin access required. Your account does not have admin privileges.')
-      return
-    }
-    setIsAdmin(true)
-  }, [session, canAdmin, setAuthError, setIsAdmin, setAuthOpen])
+    setAdminPassword('')
+    setAdminPasswordError('')
+    setPasswordPromptOpen(true)
+  }, [setPasswordPromptOpen])
 
-  // Auto-kick out if admin loses session or role changes
-  useEffect(() => {
-    if (isAdmin && (!session || !canAdmin)) {
-      setIsAdmin(false)
+  const handleAdminPasswordSubmit = useCallback(() => {
+    if (adminPassword === ADMIN_PASSWORD) {
+      setPasswordPromptOpen(false)
+      setIsAdmin(true)
+      setAdminPassword('')
+      setAdminPasswordError('')
+    } else {
+      setAdminPasswordError('Incorrect password. Please try again.')
     }
-  }, [isAdmin, session, canAdmin, setIsAdmin])
+  }, [adminPassword, setIsAdmin, setPasswordPromptOpen])
 
   // Lock body scroll when any overlay is open
   useEffect(() => {
-    if (searchOpen || isOpen || cartOpen || wishlistOpen || quickViewOpen || authOpen || profileOpen) {
+    if (searchOpen || isOpen || cartOpen || wishlistOpen || quickViewOpen || authOpen || profileOpen || passwordPromptOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
     return () => { document.body.style.overflow = '' }
-  }, [searchOpen, isOpen, cartOpen, wishlistOpen, quickViewOpen, authOpen, profileOpen])
+  }, [searchOpen, isOpen, cartOpen, wishlistOpen, quickViewOpen, authOpen, profileOpen, passwordPromptOpen])
 
   // Welcome toast
   useEffect(() => {
@@ -102,11 +102,8 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [isAdmin])
 
-  // ─── Admin Auth Guard ─────────────────────────────────────
-  const authError = useAdminStore((s) => s.authError)
-
   // ─── Admin Panel ──────────────────────────────────────────────
-  if (isAdmin && canAdmin) {
+  if (isAdmin) {
     return (
       <QueryClientProvider client={queryClient}>
         <AdminLayout>
@@ -134,29 +131,6 @@ export default function Home() {
     )
   }
 
-  // Auth error banner (admin access denied)
-  if (authError) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-card rounded-2xl p-8 shadow-luxury border border-border/50 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center mx-auto">
-              <ShieldAlert className="w-7 h-7 text-red-600 dark:text-red-400" />
-            </div>
-            <h2 className="text-lg font-semibold">Access Denied</h2>
-            <p className="text-sm text-muted-foreground">{authError}</p>
-            <button
-              onClick={() => setAuthError(null)}
-              className="h-10 px-6 rounded-xl gradient-gold text-white text-sm font-medium cursor-pointer"
-            >
-              Back to Store
-            </button>
-          </div>
-        </div>
-      </QueryClientProvider>
-    )
-  }
-
   // ─── Store Frontend ────────────────────────────────────────────
   return (
     <QueryClientProvider client={queryClient}>
@@ -169,6 +143,72 @@ export default function Home() {
       <QuickViewModal isOpen={quickViewOpen} onClose={() => { setQuickViewOpen(false); setQuickViewProduct(null) }} product={quickViewProduct} />
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
       <ProfileDrawer isOpen={profileOpen} onClose={() => setProfileOpen(false)} />
+
+      {/* Admin Password Prompt */}
+      <AnimatePresence>
+        {passwordPromptOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm"
+              onClick={() => setPasswordPromptOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed inset-0 z-[81] flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-sm bg-card rounded-2xl p-8 shadow-2xl border border-border/50 space-y-5">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-12 h-12 rounded-full gradient-gold flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-lg font-semibold">Admin Access</h2>
+                  <p className="text-sm text-muted-foreground">Enter the admin password to continue.</p>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={(e) => { setAdminPassword(e.target.value); setAdminPasswordError('') }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdminPasswordSubmit()}
+                    placeholder="Password"
+                    autoFocus
+                    className="w-full h-11 px-4 pr-11 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {adminPasswordError && (
+                  <p className="text-xs text-red-500 -mt-2">{adminPasswordError}</p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setPasswordPromptOpen(false)}
+                    className="flex-1 h-10 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAdminPasswordSubmit}
+                    className="flex-1 h-10 rounded-xl gradient-gold text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Enter
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Floating Cart Toggle */}
       {mounted && (

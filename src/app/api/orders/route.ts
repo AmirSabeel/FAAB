@@ -98,24 +98,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send order confirmation email (fire-and-forget, non-blocking)
+    // Send order confirmation email to customer (fire-and-forget, non-blocking)
+    const emailData = {
+      orderNumber,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      items: items.map((item: { name: string; price: number; quantity: number; size?: string; color?: string }) => item),
+      subtotal,
+      shipping: shippingAmount,
+      tax: taxAmount,
+      total,
+      address: customer.address,
+      city: customer.city,
+      country: customer.country,
+    }
+
     sendEmail({
       to: customer.email,
       subject: `Order Confirmed \u2014 ${orderNumber}`,
-      html: orderConfirmationEmail({
-        orderNumber,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        items: items.map((item: { name: string; price: number; quantity: number; size?: string; color?: string }) => item),
-        subtotal,
-        shipping: shippingAmount,
-        tax: taxAmount,
-        total,
-        address: customer.address,
-        city: customer.city,
-        country: customer.country,
-      }),
+      html: orderConfirmationEmail(emailData),
     }).catch(() => { /* email failure should not block order */ })
+
+    // Send notification copy to store admin
+    const notifyEmail = process.env.ORDER_NOTIFICATION_EMAIL
+    if (notifyEmail) {
+      sendEmail({
+        to: notifyEmail,
+        subject: `New Order \u2014 ${orderNumber} from ${customer.name}`,
+        html: orderConfirmationEmail({ ...emailData, customerName: `${customer.name} (${customer.email})` }),
+      }).catch(() => { /* notification failure should not block order */ })
+    }
 
     return NextResponse.json({
       success: true,

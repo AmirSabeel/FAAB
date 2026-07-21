@@ -36,8 +36,8 @@ async function ensureDefaults() {
   }
 }
 
-export async function GET() {
-  const { error } = await requireAdmin()
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
@@ -46,14 +46,14 @@ export async function GET() {
       orderBy: [{ group: 'asc' }, { order: 'asc' }],
     })
     return NextResponse.json({ settings })
-  } catch (error) {
-    console.error('Settings GET error:', error)
+  } catch (err) {
+    console.error('Settings GET error:', err)
     return NextResponse.json({ error: 'Failed to load settings' }, { status: 500 })
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
@@ -74,8 +74,8 @@ export async function PUT(req: NextRequest) {
     )
 
     return NextResponse.json({ success: true, updated: results.length })
-  } catch (error) {
-    console.error('Settings PUT error:', error)
+  } catch (err) {
+    console.error('Settings PUT error:', err)
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
   }
 }

@@ -37,6 +37,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { adminFetch } from '@/lib/admin-fetch'
 
 interface TrendingProduct {
   id: string
@@ -114,7 +115,7 @@ export function AdminTrending() {
   // Fetch trending products
   const { data: trendingProducts = [], isLoading } = useQuery<TrendingProduct[]>({
     queryKey: ['admin-trending'],
-    queryFn: () => fetch('/api/admin/trending').then((r) => r.json()),
+    queryFn: () => adminFetch('/api/admin/trending').then((r) => r.json()),
   })
 
   // Edit modal
@@ -153,9 +154,8 @@ export function AdminTrending() {
   // Reorder mutation
   const reorderMutation = useMutation({
     mutationFn: async (products: Array<{ id: string; trendingOrder: number }>) => {
-      const res = await fetch('/api/admin/trending', {
+      const res = await adminFetch('/api/admin/trending', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ products }),
       })
       if (!res.ok) throw new Error('Failed to reorder')
@@ -170,9 +170,8 @@ export function AdminTrending() {
   // Edit (update product fields) mutation
   const editMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
-      const res = await fetch('/api/admin/products', {
+      const res = await adminFetch('/api/admin/products', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error('Failed to update')
@@ -190,7 +189,7 @@ export function AdminTrending() {
   // Delete (remove from trending) mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/trending?id=${id}`, { method: 'DELETE' })
+      const res = await adminFetch(`/api/admin/trending?id=${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to remove')
       return res.json()
     },
@@ -206,9 +205,8 @@ export function AdminTrending() {
   // Add to trending mutation
   const addToTrendingMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch('/api/admin/trending', {
+      const res = await adminFetch('/api/admin/trending', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, isTrending: true }),
       })
       if (!res.ok) throw new Error('Failed to add')

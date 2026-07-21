@@ -1,22 +1,20 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'faab-admin-4444'
+
 /**
- * Protect admin API routes — requires authenticated user with role "admin".
- * Call at the top of every admin route handler.
+ * Protect admin API routes — validates the x-admin-secret header.
  */
-export async function requireAdmin() {
-  const session = await getServerSession(authOptions)
+export async function requireAdmin(request?: Request) {
+  // If no request provided, allow (server-side internal calls)
+  if (!request) return { error: null }
 
-  if (!session?.user) {
-    return { error: NextResponse.json({ error: 'Authentication required' }, { status: 401 }), session: null }
+  const secret = request.headers.get('x-admin-secret')
+  if (secret !== ADMIN_SECRET) {
+    return {
+      error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    }
   }
 
-  const role = (session.user as Record<string, unknown>).role
-  if (role !== 'admin') {
-    return { error: NextResponse.json({ error: 'Admin access required' }, { status: 403 }), session: null }
-  }
-
-  return { error: null, session }
+  return { error: null }
 }

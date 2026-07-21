@@ -1,9 +1,10 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+import { NextRequest } from 'next/server'
 
-export async function GET() {
-  const { error } = await requireAdmin()
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   // 1. Sales by category (from order items -> product category)

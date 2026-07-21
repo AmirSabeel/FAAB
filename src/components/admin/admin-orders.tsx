@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Search, Package, ChevronDown, ChevronUp } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { adminFetch } from '@/lib/admin-fetch'
 
 // ---------- Types ----------
 
@@ -83,7 +84,7 @@ export function AdminOrders() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-orders', search, status, page],
     queryFn: () =>
-      fetch(`/api/admin/orders?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&page=${page}`).then(
+      adminFetch(`/api/admin/orders?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&page=${page}`).then(
         (r) => r.json(),
       ),
   })
@@ -93,9 +94,8 @@ export function AdminOrders() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status: newStatus }: { id: string; status: string }) =>
-      fetch('/api/admin/orders', {
+      adminFetch('/api/admin/orders', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
       }).then((r) => r.json()),
     onSuccess: () => {

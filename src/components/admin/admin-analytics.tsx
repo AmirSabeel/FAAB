@@ -17,6 +17,7 @@ import {
 import { TrendingUp, TrendingDown, Users, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
+import { adminFetch } from '@/lib/admin-fetch'
 
 // ---------- Types ----------
 
@@ -81,7 +82,7 @@ function CustomBarTooltip({ active, payload, label }: { active?: boolean; payloa
 export function AdminAnalytics() {
   const { data, isLoading, error } = useQuery<AnalyticsData>({
     queryKey: ['admin-analytics'],
-    queryFn: () => fetch('/api/admin/analytics').then((r) => r.json()),
+    queryFn: () => adminFetch('/api/admin/analytics').then((r) => r.json()),
     refetchInterval: 30_000,
   })
 

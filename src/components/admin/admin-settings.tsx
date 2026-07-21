@@ -24,6 +24,7 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { adminFetch } from '@/lib/admin-fetch'
 
 // ---------- Types ----------
 
@@ -71,7 +72,7 @@ export function AdminSettings() {
   // Fetch settings
   const { data, isLoading } = useQuery<{ settings: Setting[] }>({
     queryKey: ['admin-settings'],
-    queryFn: () => fetch('/api/admin/settings').then((r) => r.json()),
+    queryFn: () => adminFetch('/api/admin/settings').then((r) => r.json()),
   })
 
   const settings = data?.settings || []
@@ -100,9 +101,8 @@ export function AdminSettings() {
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (updates: Array<{ key: string; value: string }>) => {
-      const res = await fetch('/api/admin/settings', {
+      const res = await adminFetch('/api/admin/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: updates }),
       })
       if (!res.ok) throw new Error('Failed to save')

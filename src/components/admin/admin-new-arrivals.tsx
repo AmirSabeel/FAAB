@@ -37,6 +37,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { adminFetch } from '@/lib/admin-fetch'
 
 interface NewArrivalProduct {
   id: string
@@ -114,7 +115,7 @@ export function AdminNewArrivals() {
   // Fetch new arrival products
   const { data: products = [], isLoading } = useQuery<NewArrivalProduct[]>({
     queryKey: ['admin-new-arrivals'],
-    queryFn: () => fetch('/api/admin/new-arrivals').then((r) => r.json()),
+    queryFn: () => adminFetch('/api/admin/new-arrivals').then((r) => r.json()),
   })
 
   // Edit modal state
@@ -156,9 +157,8 @@ export function AdminNewArrivals() {
   // Reorder mutation
   const reorderMutation = useMutation({
     mutationFn: async (items: Array<{ id: string; newArrivalOrder: number }>) => {
-      const res = await fetch('/api/admin/new-arrivals', {
+      const res = await adminFetch('/api/admin/new-arrivals', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ products: items }),
       })
       if (!res.ok) throw new Error('Failed to reorder')
@@ -172,16 +172,10 @@ export function AdminNewArrivals() {
   // Edit mutation
   const editMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
-      const res = await fetch('/api/admin/products', {
+      const res = await adminFetch('/api/admin/products', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      if (!res.ok) throw new Error('Failed to update')
-      return res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-new-arrivals'] })
       queryClient.invalidateQueries({ queryKey: ['admin-products'] })
       toast.success('Product updated')
       setEditingProduct(null)
@@ -192,7 +186,7 @@ export function AdminNewArrivals() {
   // Delete (remove from new arrivals) mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/new-arrivals?id=${id}`, { method: 'DELETE' })
+      const res = await adminFetch(`/api/admin/new-arrivals?id=${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to remove')
       return res.json()
     },
@@ -207,9 +201,8 @@ export function AdminNewArrivals() {
   // Add to new arrivals mutation
   const addMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch('/api/admin/new-arrivals', {
+      const res = await adminFetch('/api/admin/new-arrivals', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, isNewArrival: true }),
       })
       if (!res.ok) throw new Error('Failed to add')

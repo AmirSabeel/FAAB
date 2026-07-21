@@ -2,8 +2,8 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
-export async function GET() {
-  const { error } = await requireAdmin()
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
   if (error) return error
   const [totalRevenue, orderCount, customerCount, productCount, recentOrders, topProducts, statusBreakdown] = await Promise.all([
     db.order.aggregate({ _sum: { total: true }, where: { status: { not: 'cancelled' } } }),
