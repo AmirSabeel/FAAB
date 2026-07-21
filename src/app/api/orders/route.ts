@@ -2,6 +2,8 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { sendEmail } from '@/lib/email'
+import { orderConfirmationEmail } from '@/lib/email-templates'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -95,6 +97,25 @@ export async function POST(req: NextRequest) {
         // Product might not exist in DB (demo products) — skip stock update
       }
     }
+
+    // Send order confirmation email (fire-and-forget, non-blocking)
+    sendEmail({
+      to: customer.email,
+      subject: `Order Confirmed \u2014 ${orderNumber}`,
+      html: orderConfirmationEmail({
+        orderNumber,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        items: items.map((item: { name: string; price: number; quantity: number; size?: string; color?: string }) => item),
+        subtotal,
+        shipping: shippingAmount,
+        tax: taxAmount,
+        total,
+        address: customer.address,
+        city: customer.city,
+        country: customer.country,
+      }),
+    }).catch(() => { /* email failure should not block order */ })
 
     return NextResponse.json({
       success: true,

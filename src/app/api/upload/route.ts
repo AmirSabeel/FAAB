@@ -2,24 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
+import crypto from 'crypto'
+import { requireAdmin } from '@/lib/admin-auth'
 
-const SIZES = [
-  { name: 'thumb', width: 100, height: 133 },
-  { name: 'small', width: 300, height: 400 },
-  { name: 'medium', width: 500, height: 667 },
-  { name: 'large', width: 800, height: 1067 },
-]
+// ── Config ────────────────────────────────────────────────────────────────────
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+// Maintain 3:4 aspect ratio (portrait, matching product cards)
+const SIZES: Record<string, { width: number; height: number }> = {
+  thumb:  { width: 100, height: 133 },
+  small:  { width: 300, height: 400 },
+  medium: { width: 500, height: 667 },
+  large:  { width: 800, height: 1067 },
 }
 
+const UPLOAD_BASE = path.join(process.cwd(), 'public', 'uploads', 'products')
+
+// ── POST Handler ──────────────────────────────────────────────────────────────
+
 export async function POST(req: NextRequest) {
+  // Auth check — only admins can upload
+  const { error } = await requireAdmin()
+  if (error) return error
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -28,6 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
+    // Validate type
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Use JPG, PNG, WebP, GIF, or AVIF.' },
@@ -35,74 +43,79 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: `File too large (${formatBytes(file.size)}). Max 10MB.` },
+        { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 10MB.` },
         { status: 400 }
       )
     }
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    // Read file buffer
+    const buffer = Buffer.from(await file.arrayBuffer())
 
-    // Generate unique filename
-    const ext = file.name.split('.').pop() || 'webp'
-    const baseName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    // Generate unique file prefix
+    const prefix = `${Date.now()}-${crypto.randomBytes(3).toString('hex').slice(0, 6)}`
+
+    // Ensure all size directories exist
+    await Promise.all(
+      ['thumb', 'small', 'medium', 'large', 'original'].map((dir) =>
+        mkdir(path.join(UPLOAD_BASE, dir), { recursive: true })
+      )
+    )
 
     const sizes: Record<string, { url: string; width: number; height: number; size: string }> = {}
 
-    // Process each size
-    for (const size of SIZES) {
-      const dir = path.join(process.cwd(), 'public', 'uploads', size.name)
-      await mkdir(dir, { recursive: true })
-
-      const fileName = `${baseName}.webp`
-      const filePath = path.join(dir, fileName)
-
-      await sharp(buffer)
-        .resize(size.width, size.height, { fit: 'cover' })
-        .webp({ quality: 85 })
-        .toFile(filePath)
-
-      const stat = await import('fs').then(fs => fs.promises.stat(filePath))
-      sizes[size.name] = {
-        url: `/uploads/${size.name}/${fileName}`,
-        width: size.width,
-        height: size.height,
-        size: formatBytes(stat.size),
-      }
+    // 1. Save original (converted to WebP for consistency)
+    const originalName = `${prefix}-original.webp`
+    const originalPath = path.join(UPLOAD_BASE, 'original', originalName)
+    await sharp(buffer).webp({ quality: 85 }).toFile(originalPath)
+    const originalMeta = await sharp(originalPath).metadata()
+    sizes.original = {
+      url: `/uploads/products/original/${originalName}`,
+      width: originalMeta.width || 0,
+      height: originalMeta.height || 0,
+      size: formatBytes((await sharp(originalPath).metadata()).size || 0),
     }
 
-    // Save original
-    const origDir = path.join(process.cwd(), 'public', 'uploads', 'original')
-    await mkdir(origDir, { recursive: true })
-    const origFileName = `${baseName}.webp`
-    const origPath = path.join(origDir, origFileName)
-
-    await sharp(buffer)
-      .webp({ quality: 90 })
-      .toFile(origPath)
-
-    const origStat = await import('fs').then(fs => fs.promises.stat(origPath))
-    const metadata = await sharp(buffer).metadata()
-    sizes['original'] = {
-      url: `/uploads/original/${origFileName}`,
-      width: metadata.width || 0,
-      height: metadata.height || 0,
-      size: formatBytes(origStat.size),
+    // 2. Generate resized variants
+    for (const [name, dims] of Object.entries(SIZES)) {
+      const fileName = `${prefix}-${name}.webp`
+      const filePath = path.join(UPLOAD_BASE, name, fileName)
+      await sharp(buffer)
+        .resize(dims.width, dims.height, { fit: 'cover' })
+        .webp({ quality: 80 })
+        .toFile(filePath)
+      const stat = await sharp(filePath).metadata()
+      sizes[name] = {
+        url: `/uploads/products/${name}/${fileName}`,
+        width: dims.width,
+        height: dims.height,
+        size: formatBytes(stat.size || 0),
+      }
     }
 
     return NextResponse.json({
       success: true,
-      fileName: `${baseName}.webp`,
+      fileName: `${prefix}-medium.webp`,
       sizes,
-      mainUrl: sizes.medium?.url || sizes.original?.url,
+      mainUrl: sizes.medium.url,
     })
-  } catch (error) {
-    console.error('Upload error:', error)
+  } catch (err) {
+    console.error('Upload error:', err)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Upload failed' },
+      { error: 'Failed to process image. Please try again.' },
       { status: 500 }
     )
   }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/components/session-provider";
+import { DbSyncProvider } from "@/components/db-sync-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -80,7 +81,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange={false}
           >
-            {children}
+            <DbSyncProvider>
+              {children}
+            </DbSyncProvider>
             <Toaster />
           </ThemeProvider>
         </SessionProvider>

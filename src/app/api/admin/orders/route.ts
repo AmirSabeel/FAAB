@@ -1,6 +1,8 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+import { sendEmail } from '@/lib/email'
+import { orderStatusUpdateEmail } from '@/lib/email-templates'
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin()
@@ -45,6 +47,24 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json()
   const { id, status } = body
   if (!id || !status) return NextResponse.json({ error: 'ID and status required' }, { status: 400 })
-  const order = await db.order.update({ where: { id }, data: { status } })
+  const order = await db.order.update({
+    where: { id },
+    data: { status },
+    include: { customer: { select: { name: true, email: true } } },
+  })
+
+  // Send status update email (fire-and-forget)
+  if (order.customer?.email) {
+    sendEmail({
+      to: order.customer.email,
+      subject: `Order Update — ${order.orderNumber}`,
+      html: orderStatusUpdateEmail({
+        orderNumber: order.orderNumber,
+        customerName: order.customer.name,
+        newStatus: status,
+      }),
+    }).catch(() => { /* email failure should not block status update */ })
+  }
+
   return NextResponse.json(order)
 }

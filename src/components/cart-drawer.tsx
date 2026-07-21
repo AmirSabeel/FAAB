@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingBag, Lock } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -29,6 +30,35 @@ interface CartStore {
   clearCart: () => void;
   totalItems: () => number;
   totalPrice: () => number;
+  _syncToDb: () => Promise<void>;
+  _loadFromDb: () => Promise<void>;
+  _hydrated: boolean;
+  _setHydrated: () => void;
+}
+
+// ─── DB Sync helpers (defined outside store to avoid circular deps) ──────────
+
+async function syncCartToDb(items: CartItem[]) {
+  try {
+    await fetch('/api/cart', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+  } catch {
+    // Silent — DB sync failure should not break local cart
+  }
+}
+
+async function loadCartFromDb(): Promise<CartItem[]> {
+  try {
+    const res = await fetch('/api/cart');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.items || [];
+  } catch {
+    return [];
+  }
 }
 
 // ─── Zustand Store (exported for external use) ───────────────────────────────
@@ -36,63 +66,103 @@ interface CartStore {
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
-  items: [
-    {
-      id: 'demo-silk-blazer',
-      name: 'Silk Blend Blazer',
-      price: 40587,
-      image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=400&h=530&fit=crop&q=80',
-      size: 'M',
-      quantity: 1,
-    },
-    {
-      id: 'demo-cashmere-sweater',
-      name: 'Cashmere Sweater',
-      price: 27307,
-      image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=530&fit=crop&q=80',
-      color: 'Ivory',
-      quantity: 1,
-    },
-  ],
+      items: [],
+      _hydrated: false,
+      _setHydrated: () => set({ _hydrated: true }),
 
-  addItem: (item) =>
-    set((state) => {
-      const existing = state.items.find((i) => i.id === item.id);
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-          ),
-        };
-      }
-      return { items: [...state.items, { ...item, quantity: 1 }] };
-    }),
+      addItem: (item) =>
+        set((state) => {
+          const existing = state.items.find((i) => i.id === item.id);
+          if (existing) {
+            return {
+              items: state.items.map((i) =>
+                i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+              ),
+            };
+          }
+          return { items: [...state.items, { ...item, quantity: 1 }] };
+        }),
 
-  removeItem: (id) =>
-    set((state) => ({
-      items: state.items.filter((i) => i.id !== id),
-    })),
+      removeItem: (id) =>
+        set((state) => ({
+          items: state.items.filter((i) => i.id !== id),
+        })),
 
-  updateQuantity: (id, quantity) =>
-    set((state) => ({
-      items:
-        quantity <= 0
-          ? state.items.filter((i) => i.id !== id)
-          : state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
-    })),
+      updateQuantity: (id, quantity) =>
+        set((state) => ({
+          items:
+            quantity <= 0
+              ? state.items.filter((i) => i.id !== id)
+              : state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+        })),
 
-  clearCart: () => set({ items: [] }),
+      clearCart: () => {
+        set({ items: [] });
+        // Also clear from DB
+        fetch('/api/cart', { method: 'DELETE' }).catch(() => {});
+      },
 
-  totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
+      totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
-  totalPrice: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+      totalPrice: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+
+      _syncToDb: async () => {
+        const { items } = get();
+        await syncCartToDb(items);
+      },
+
+      _loadFromDb: async () => {
+        const dbItems = await loadCartFromDb();
+        if (dbItems.length > 0) {
+          // Merge: DB items take priority, but don't lose local items not in DB
+          const localItems = get().items;
+          const dbIds = new Set(dbItems.map((i) => i.id));
+          const localOnly = localItems.filter((i) => !dbIds.has(i.id));
+          set({ items: [...dbItems, ...localOnly] });
+        }
+      },
     }),
     {
       name: 'faab-cart',
       partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        state?._setHydrated();
+      },
     }
   )
 );
+
+// ─── DB Sync Hook ─────────────────────────────────────────────────────────────
+
+export function useCartDbSync() {
+  const { data: session, status } = useSession();
+  const items = useCartStore((s) => s.items);
+  const _hydrated = useCartStore((s) => s._hydrated);
+  const _loadFromDb = useCartStore((s) => s._loadFromDb);
+  const _syncToDb = useCartStore((s) => s._syncToDb);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load from DB when user logs in (only once per login)
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id && _hydrated) {
+      _loadFromDb();
+    }
+  }, [status, session?.user?.id, _hydrated, _loadFromDb]);
+
+  // Sync to DB on item changes (debounced)
+  useEffect(() => {
+    if (status !== 'authenticated' || !session?.user?.id || !_hydrated) return;
+
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => {
+      _syncToDb();
+    }, 1000);
+
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, [items, status, session?.user?.id, _hydrated, _syncToDb]);
+}
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
