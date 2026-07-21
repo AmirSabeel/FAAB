@@ -135,7 +135,7 @@ export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
       <PageLoader />
-      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} onAuthClick={() => setAuthOpen(true)} onProfileClick={() => setProfileOpen(true)} />
+      <Navbar onMenuClick={toggle} onSearchClick={() => setSearchOpen(true)} onWishlistClick={() => setWishlistOpen(true)} onCartClick={() => setCartOpen(true)} onAuthClick={() => setAuthOpen(true)} onProfileClick={() => setProfileOpen(true)} onAdminClick={handleAdminClick} />
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <MobileNavDrawer isOpen={isOpen} onClose={close} onAdminClick={handleAdminClick} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />

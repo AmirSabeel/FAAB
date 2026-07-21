@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useSyncExternalStore } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useSession } from 'next-auth/react'
-import { Sun, Moon, Search, Heart, ShoppingBag, Menu, User as UserIcon } from 'lucide-react'
+import { Sun, Moon, Search, Heart, ShoppingBag, Menu, User as UserIcon, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/components/cart-drawer'
 import { useWishlistStore } from '@/components/wishlist-store'
@@ -26,6 +26,7 @@ interface NavbarProps {
   onCartClick?: () => void
   onAuthClick?: () => void
   onProfileClick?: () => void
+  onAdminClick?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -38,7 +39,7 @@ function useHydrated() {
   )
 }
 
-export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick, onAuthClick, onProfileClick }: NavbarProps) {
+export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClick, onAuthClick, onProfileClick, onAdminClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const cartCount = useCartStore((s) => s.totalItems())
   const wishlistCount = useWishlistStore((s) => s.items.length)
@@ -136,6 +137,18 @@ export function Navbar({ onMenuClick, onSearchClick, onWishlistClick, onCartClic
               </motion.button>
             )}
           </AnimatePresence>
+
+          {/* Admin Access Button */}
+          {mounted && (
+            <button
+              onClick={onAdminClick}
+              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-foreground/5 transition-colors text-gold"
+              title="Admin Panel"
+              aria-label="Admin Panel"
+            >
+              <Lock className="w-[18px] h-[18px]" />
+            </button>
+          )}
 
           {/* User / Auth Button */}
           <AnimatePresence mode="wait">
