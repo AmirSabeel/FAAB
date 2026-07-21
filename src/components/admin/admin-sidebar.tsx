@@ -233,7 +233,7 @@ export function AdminSidebar({
             onTabChange={onTabChange}
             collapsed={false}
             onToggle={() => {}}
-            onMobileSelect={() => onTabChange(activeTab)}
+            onMobileSelect={() => setMobileOpen(false)}
           />
         </SheetContent>
       </Sheet>
