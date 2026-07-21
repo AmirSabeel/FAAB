@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { ALL_PRODUCTS } from '@/data/products'
 
+// In-memory store for fallback overrides when DB is read-only on Vercel
+const memoryOverrides = new Map<string, any>()
+
 const FALLBACK_ADMIN_PRODUCTS = ALL_PRODUCTS.map((p, i) => ({
   id: p.id || `prod-${i + 1}`,
   name: p.name,
@@ -78,13 +81,19 @@ export async function GET(req: NextRequest) {
     const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
     const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
 
-    // 3. Build merged list
+    // 3. Build merged list starting with fallbacks and overrides
     const mergedList: Array<any> = []
     const processedDbIds = new Set<string>()
 
     for (const fallback of FALLBACK_ADMIN_PRODUCTS) {
-      const match = dbMapByName.get(fallback.name.toLowerCase().trim()) || dbMapById.get(fallback.id)
-      if (match) {
+      const overrideKey = fallback.name.toLowerCase().trim()
+      const override = memoryOverrides.get(overrideKey)
+      const match = dbMapByName.get(overrideKey) || dbMapById.get(fallback.id)
+
+      if (override) {
+        mergedList.push({ ...fallback, ...match, ...override })
+        if (match) processedDbIds.add(match.id)
+      } else if (match) {
         mergedList.push(match)
         processedDbIds.add(match.id)
       } else {
@@ -94,7 +103,8 @@ export async function GET(req: NextRequest) {
 
     for (const dbP of dbProducts) {
       if (!processedDbIds.has(dbP.id)) {
-        mergedList.push(dbP)
+        const override = memoryOverrides.get(dbP.name.toLowerCase().trim())
+        mergedList.push(override ? { ...dbP, ...override } : dbP)
       }
     }
 
@@ -152,23 +162,35 @@ export async function POST(req: NextRequest) {
     const sizes = Array.isArray(body.sizes) ? JSON.stringify(body.sizes) : typeof body.sizes === 'string' ? body.sizes : '[]'
     const colors = Array.isArray(body.colors) ? JSON.stringify(body.colors) : typeof body.colors === 'string' ? body.colors : '[]'
 
-    const product = await db.product.create({
-      data: {
-        name,
-        description: body.description ? String(body.description).trim() : '',
-        price,
-        originalPrice: body.originalPrice ? Number(body.originalPrice) : null,
-        category,
-        stock: Number(body.stock) || 0,
-        status: body.status || 'active',
-        image,
-        sizes,
-        colors,
-        isFeatured: Boolean(body.isFeatured),
-        isNew: Boolean(body.isNew),
-        isTrending: Boolean(body.isTrending),
-      },
-    })
+    const newProductData = {
+      name,
+      description: body.description ? String(body.description).trim() : '',
+      price,
+      originalPrice: body.originalPrice ? Number(body.originalPrice) : null,
+      category,
+      stock: Number(body.stock) || 0,
+      status: body.status || 'active',
+      image,
+      sizes,
+      colors,
+      isFeatured: Boolean(body.isFeatured),
+      isNew: Boolean(body.isNew),
+      isTrending: Boolean(body.isTrending),
+    }
+
+    let product = await db.product.create({
+      data: newProductData,
+    }).catch(() => null)
+
+    if (!product) {
+      product = {
+        id: `created-${Date.now()}`,
+        ...newProductData,
+        createdAt: new Date().toISOString(),
+      } as any
+    }
+
+    memoryOverrides.set(name.toLowerCase().trim(), product)
 
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
@@ -216,7 +238,7 @@ export async function PUT(req: NextRequest) {
       product = await db.product.update({
         where: { id: existingProduct.id },
         data: updateData,
-      })
+      }).catch(() => null)
     } else {
       product = await db.product.create({
         data: {
@@ -233,7 +255,21 @@ export async function PUT(req: NextRequest) {
           isFeatured: Boolean(updateData.isFeatured),
           isNew: Boolean(updateData.isNew),
         },
-      })
+      }).catch(() => null)
+    }
+
+    if (!product) {
+      product = {
+        id,
+        ...updateData,
+        updatedAt: new Date().toISOString(),
+      } as any
+    }
+
+    if (updateData.name) {
+      memoryOverrides.set(String(updateData.name).toLowerCase().trim(), product)
+    } else if (existingProduct?.name) {
+      memoryOverrides.set(existingProduct.name.toLowerCase().trim(), product)
     }
 
     return NextResponse.json(product)
@@ -255,6 +291,7 @@ export async function DELETE(req: NextRequest) {
     const existingProduct = await db.product.findUnique({ where: { id } }).catch(() => null)
     if (existingProduct) {
       await db.product.delete({ where: { id: existingProduct.id } }).catch(() => {})
+      memoryOverrides.delete(existingProduct.name.toLowerCase().trim())
     }
 
     return NextResponse.json({ success: true })
