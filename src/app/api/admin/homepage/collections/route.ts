@@ -2,16 +2,32 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
+const DEFAULT_COLLECTIONS = [
+  { name: 'Summer Essentials', itemCount: 12, image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80', link: '/shop', sortOrder: 0 },
+  { name: 'Evening Wear', itemCount: 8, image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1000&fit=crop&q=80', link: '/shop', sortOrder: 1 },
+  { name: 'Minimal Edit', itemCount: 15, image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&h=1000&fit=crop&q=80', link: '/shop', sortOrder: 2 },
+]
+
+async function ensureDefaultCollections() {
+  const count = await db.homepageCollection.count()
+  if (count === 0) {
+    for (const col of DEFAULT_COLLECTIONS) {
+      await db.homepageCollection.create({ data: col }).catch(() => {})
+    }
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
+    await ensureDefaultCollections()
     const cols = await db.homepageCollection.findMany({ orderBy: { sortOrder: 'asc' } })
     return NextResponse.json(cols)
   } catch (e) {
     console.error('collections GET error:', e)
-    return NextResponse.json([])
+    return NextResponse.json(DEFAULT_COLLECTIONS)
   }
 }
 

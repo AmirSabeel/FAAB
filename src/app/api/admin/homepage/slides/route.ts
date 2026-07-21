@@ -2,16 +2,56 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
+const DEFAULT_SLIDES = [
+  {
+    title: 'The New\nSeason Arrives',
+    subtitle: 'Discover the latest collection of timeless pieces crafted with meticulous attention to detail and refined elegance.',
+    ctaText: 'Shop Now',
+    ctaLink: '/shop',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80',
+    sortOrder: 0,
+    isActive: true,
+  },
+  {
+    title: 'Curated\nLuxury',
+    subtitle: "Explore handpicked selections from the world's most coveted fashion houses and emerging designers.",
+    ctaText: 'Explore Collection',
+    ctaLink: '/shop',
+    image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=80',
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    title: 'Define\nYour Style',
+    subtitle: 'From runway to everyday — express your individuality with pieces that speak louder than words.',
+    ctaText: 'Discover More',
+    ctaLink: '/shop',
+    image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&q=80',
+    sortOrder: 2,
+    isActive: true,
+  },
+]
+
+async function ensureDefaultSlides() {
+  const count = await db.heroSlide.count()
+  if (count === 0) {
+    for (const slide of DEFAULT_SLIDES) {
+      await db.heroSlide.create({ data: slide }).catch(() => {})
+    }
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
+    await ensureDefaultSlides()
     const slides = await db.heroSlide.findMany({ orderBy: { sortOrder: 'asc' } })
     return NextResponse.json(slides)
   } catch (e) {
     console.error('slides GET error:', e)
-    return NextResponse.json([])
+    return NextResponse.json(DEFAULT_SLIDES)
   }
 }
 

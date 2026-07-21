@@ -2,16 +2,35 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 
+const DEFAULT_CATEGORIES = [
+  { name: "Women's Fashion", image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop&q=80', link: "/shop?category=Women's Fashion", sortOrder: 0 },
+  { name: "Men's Fashion", image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&h=400&fit=crop&q=80', link: "/shop?category=Men's Fashion", sortOrder: 1 },
+  { name: 'Accessories', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&q=80', link: '/shop?category=Accessories', sortOrder: 2 },
+  { name: 'Footwear', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop&q=80', link: '/shop?category=Footwear', sortOrder: 3 },
+  { name: 'Bags', image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=400&fit=crop&q=80', link: '/shop?category=Accessories', sortOrder: 4 },
+  { name: 'Watches', image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&h=400&fit=crop&q=80', link: '/shop?category=Watches', sortOrder: 5 },
+]
+
+async function ensureDefaultCategories() {
+  const count = await db.homepageCategory.count()
+  if (count === 0) {
+    for (const cat of DEFAULT_CATEGORIES) {
+      await db.homepageCategory.create({ data: cat }).catch(() => {})
+    }
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
+    await ensureDefaultCategories()
     const cats = await db.homepageCategory.findMany({ orderBy: { sortOrder: 'asc' } })
     return NextResponse.json(cats)
   } catch (e) {
     console.error('categories GET error:', e)
-    return NextResponse.json([])
+    return NextResponse.json(DEFAULT_CATEGORIES)
   }
 }
 
