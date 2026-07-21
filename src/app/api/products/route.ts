@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { ALL_PRODUCTS } from '@/data/products'
 
 const CATEGORIES = [
   "Women's Fashion",
@@ -16,6 +17,36 @@ const SORT_MAP: Record<string, Record<string, string>> = {
   'price-desc': { price: 'desc' },
   name: { name: 'asc' },
   rating: { rating: 'desc' },
+}
+
+async function ensureDefaultProducts() {
+  const count = await db.product.count()
+  if (count === 0) {
+    for (let i = 0; i < ALL_PRODUCTS.length; i++) {
+      const p = ALL_PRODUCTS[i]
+      await db.product.create({
+        data: {
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          originalPrice: p.originalPrice || null,
+          image: p.image,
+          category: p.category,
+          rating: p.rating || 4.8,
+          reviewCount: p.reviewCount || 10,
+          stock: 25,
+          status: 'active',
+          isFeatured: true,
+          isNew: p.isNew || false,
+          isTrending: p.id.startsWith('trend-'),
+          trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
+          newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
+          sizes: JSON.stringify(p.sizes || []),
+          colors: JSON.stringify(p.colors || []),
+        },
+      }).catch(() => {})
+    }
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -41,33 +72,45 @@ export async function GET(req: NextRequest) {
 
   const orderBy = SORT_MAP[sort] || { createdAt: 'desc' }
 
-  const [products, total] = await Promise.all([
-    db.product.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy,
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        originalPrice: true,
-        image: true,
-        category: true,
-        rating: true,
-        reviewCount: true,
-        isNew: true,
-        isFeatured: true,
-      },
-    }),
-    db.product.count({ where }),
-  ])
+  try {
+    await ensureDefaultProducts()
+    const [products, total] = await Promise.all([
+      db.product.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          originalPrice: true,
+          image: true,
+          category: true,
+          rating: true,
+          reviewCount: true,
+          isNew: true,
+          isFeatured: true,
+        },
+      }),
+      db.product.count({ where }),
+    ])
 
-  return NextResponse.json({
-    products,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-    categories: CATEGORIES,
-  })
+    return NextResponse.json({
+      products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      categories: CATEGORIES,
+    })
+  } catch (err) {
+    console.error('Error in public products API:', err)
+    return NextResponse.json({
+      products: ALL_PRODUCTS,
+      total: ALL_PRODUCTS.length,
+      page: 1,
+      totalPages: 1,
+      categories: CATEGORIES,
+    })
+  }
 }

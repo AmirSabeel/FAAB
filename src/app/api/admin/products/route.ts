@@ -1,6 +1,37 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
+import { ALL_PRODUCTS } from '@/data/products'
+
+async function ensureDefaultProducts() {
+  const count = await db.product.count()
+  if (count === 0) {
+    for (let i = 0; i < ALL_PRODUCTS.length; i++) {
+      const p = ALL_PRODUCTS[i]
+      await db.product.create({
+        data: {
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          originalPrice: p.originalPrice || null,
+          image: p.image,
+          category: p.category,
+          rating: p.rating || 4.8,
+          reviewCount: p.reviewCount || 10,
+          stock: 25,
+          status: 'active',
+          isFeatured: true,
+          isNew: p.isNew || false,
+          isTrending: p.id.startsWith('trend-'),
+          trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
+          newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
+          sizes: JSON.stringify(p.sizes || []),
+          colors: JSON.stringify(p.colors || []),
+        },
+      }).catch(() => {})
+    }
+  }
+}
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
@@ -9,16 +40,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const search = searchParams.get('search') || ''
   const category = searchParams.get('category') || ''
-  const status = searchParams.get('status') || ''
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '20')
 
   const where: Record<string, unknown> = {}
+  if (category && category !== 'all') where.category = category
   if (search) where.name = { contains: search }
-  if (category) where.category = category
-  if (status) where.status = status
 
   try {
+    await ensureDefaultProducts()
     const [products, total] = await Promise.all([
       db.product.findMany({
         where,
@@ -42,23 +72,36 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const data = {
-      name: String(body.name || '').trim(),
-      description: body.description ? String(body.description).trim() : null,
-      price: Number(body.price) || 0,
-      originalPrice: body.originalPrice ? Number(body.originalPrice) : null,
-      category: String(body.category || "Women's Fashion"),
-      stock: Number(body.stock) || 0,
-      image: String(body.image || '').trim(),
-      status: String(body.status || 'active'),
-      isFeatured: Boolean(body.isFeatured),
-      isNew: Boolean(body.isNew),
-      isTrending: Boolean(body.isTrending),
-      sizes: typeof body.sizes === 'string' ? body.sizes : JSON.stringify(body.sizes || []),
-      colors: typeof body.colors === 'string' ? body.colors : JSON.stringify(body.colors || []),
+    const name = String(body.name || '').trim()
+    const category = String(body.category || '').trim()
+    const price = Number(body.price) || 0
+    const image = String(body.image || '').trim()
+
+    if (!name || !category || !price || !image) {
+      return NextResponse.json({ error: 'Name, category, price, and image are required' }, { status: 400 })
     }
 
-    const product = await db.product.create({ data })
+    const sizes = Array.isArray(body.sizes) ? JSON.stringify(body.sizes) : typeof body.sizes === 'string' ? body.sizes : '[]'
+    const colors = Array.isArray(body.colors) ? JSON.stringify(body.colors) : typeof body.colors === 'string' ? body.colors : '[]'
+
+    const product = await db.product.create({
+      data: {
+        name,
+        description: body.description ? String(body.description).trim() : '',
+        price,
+        originalPrice: body.originalPrice ? Number(body.originalPrice) : null,
+        category,
+        stock: Number(body.stock) || 0,
+        status: body.status || 'active',
+        image,
+        sizes,
+        colors,
+        isFeatured: Boolean(body.isFeatured),
+        isNew: Boolean(body.isNew),
+        isTrending: Boolean(body.isTrending),
+      },
+    })
+
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
     console.error('Error creating product:', err)
@@ -75,26 +118,31 @@ export async function PUT(req: NextRequest) {
     const { id } = body
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    const data: Record<string, unknown> = {}
-    if (body.name !== undefined) data.name = String(body.name).trim()
-    if (body.description !== undefined) data.description = body.description ? String(body.description).trim() : null
-    if (body.price !== undefined) data.price = Number(body.price)
-    if (body.originalPrice !== undefined) data.originalPrice = body.originalPrice ? Number(body.originalPrice) : null
-    if (body.category !== undefined) data.category = String(body.category)
-    if (body.stock !== undefined) data.stock = Number(body.stock)
-    if (body.image !== undefined) data.image = String(body.image).trim()
-    if (body.status !== undefined) data.status = String(body.status)
-    if (body.isFeatured !== undefined) data.isFeatured = Boolean(body.isFeatured)
-    if (body.isNew !== undefined) data.isNew = Boolean(body.isNew)
-    if (body.isTrending !== undefined) data.isTrending = Boolean(body.isTrending)
+    const updateData: Record<string, unknown> = {}
+    if (body.name !== undefined) updateData.name = String(body.name).trim()
+    if (body.description !== undefined) updateData.description = String(body.description).trim()
+    if (body.price !== undefined) updateData.price = Number(body.price)
+    if (body.originalPrice !== undefined) updateData.originalPrice = body.originalPrice ? Number(body.originalPrice) : null
+    if (body.category !== undefined) updateData.category = String(body.category).trim()
+    if (body.stock !== undefined) updateData.stock = Number(body.stock)
+    if (body.status !== undefined) updateData.status = String(body.status)
+    if (body.image !== undefined) updateData.image = String(body.image).trim()
+    if (body.isFeatured !== undefined) updateData.isFeatured = Boolean(body.isFeatured)
+    if (body.isNew !== undefined) updateData.isNew = Boolean(body.isNew)
+    if (body.isTrending !== undefined) updateData.isTrending = Boolean(body.isTrending)
+
     if (body.sizes !== undefined) {
-      data.sizes = typeof body.sizes === 'string' ? body.sizes : JSON.stringify(body.sizes || [])
+      updateData.sizes = Array.isArray(body.sizes) ? JSON.stringify(body.sizes) : typeof body.sizes === 'string' ? body.sizes : '[]'
     }
     if (body.colors !== undefined) {
-      data.colors = typeof body.colors === 'string' ? body.colors : JSON.stringify(body.colors || [])
+      updateData.colors = Array.isArray(body.colors) ? JSON.stringify(body.colors) : typeof body.colors === 'string' ? body.colors : '[]'
     }
 
-    const product = await db.product.update({ where: { id }, data })
+    const product = await db.product.update({
+      where: { id },
+      data: updateData,
+    })
+
     return NextResponse.json(product)
   } catch (err) {
     console.error('Error updating product:', err)
@@ -111,7 +159,6 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
 
-    await db.orderItem.deleteMany({ where: { productId: id } })
     await db.product.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (err) {
