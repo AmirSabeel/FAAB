@@ -2,7 +2,7 @@
  * Shared fetch helper for admin API calls.
  * Automatically attaches the admin secret header.
  */
-const ADMIN_SECRET = 'faab-admin-4444'
+const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET || 'faab-admin-4444'
 
 export function adminFetch(input: string, init?: RequestInit): Promise<Response> {
   return fetch(input, {

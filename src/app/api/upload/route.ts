@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
+import { mkdir } from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { requireAdmin } from '@/lib/admin-auth'
 
-// ── Config ────────────────────────────────────────────────────────────────────
-
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-// Maintain 3:4 aspect ratio (portrait, matching product cards)
 const SIZES: Record<string, { width: number; height: number }> = {
   thumb:  { width: 100, height: 133 },
   small:  { width: 300, height: 400 },
@@ -20,11 +17,8 @@ const SIZES: Record<string, { width: number; height: number }> = {
 
 const UPLOAD_BASE = path.join(process.cwd(), 'public', 'uploads', 'products')
 
-// ── POST Handler ──────────────────────────────────────────────────────────────
-
 export async function POST(req: NextRequest) {
-  // Auth check — only admins can upload
-  const { error } = await requireAdmin()
+  const { error } = await requireAdmin(req)
   if (error) return error
 
   try {
@@ -35,7 +29,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Validate type
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Use JPG, PNG, WebP, GIF, or AVIF.' },
@@ -43,7 +36,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 10MB.` },
@@ -51,56 +43,76 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Read file buffer
     const buffer = Buffer.from(await file.arrayBuffer())
-
-    // Generate unique file prefix
     const prefix = `${Date.now()}-${crypto.randomBytes(3).toString('hex').slice(0, 6)}`
 
-    // Ensure all size directories exist
-    await Promise.all(
-      ['thumb', 'small', 'medium', 'large', 'original'].map((dir) =>
-        mkdir(path.join(UPLOAD_BASE, dir), { recursive: true })
+    try {
+      // Attempt local disk save
+      await Promise.all(
+        ['thumb', 'small', 'medium', 'large', 'original'].map((dir) =>
+          mkdir(path.join(UPLOAD_BASE, dir), { recursive: true })
+        )
       )
-    )
 
-    const sizes: Record<string, { url: string; width: number; height: number; size: string }> = {}
+      const originalName = `${prefix}-original.webp`
+      const originalPath = path.join(UPLOAD_BASE, 'original', originalName)
+      await sharp(buffer).webp({ quality: 85 }).toFile(originalPath)
+      const originalMeta = await sharp(originalPath).metadata()
 
-    // 1. Save original (converted to WebP for consistency)
-    const originalName = `${prefix}-original.webp`
-    const originalPath = path.join(UPLOAD_BASE, 'original', originalName)
-    await sharp(buffer).webp({ quality: 85 }).toFile(originalPath)
-    const originalMeta = await sharp(originalPath).metadata()
-    sizes.original = {
-      url: `/uploads/products/original/${originalName}`,
-      width: originalMeta.width || 0,
-      height: originalMeta.height || 0,
-      size: formatBytes((await sharp(originalPath).metadata()).size || 0),
-    }
-
-    // 2. Generate resized variants
-    for (const [name, dims] of Object.entries(SIZES)) {
-      const fileName = `${prefix}-${name}.webp`
-      const filePath = path.join(UPLOAD_BASE, name, fileName)
-      await sharp(buffer)
-        .resize(dims.width, dims.height, { fit: 'cover' })
-        .webp({ quality: 80 })
-        .toFile(filePath)
-      const stat = await sharp(filePath).metadata()
-      sizes[name] = {
-        url: `/uploads/products/${name}/${fileName}`,
-        width: dims.width,
-        height: dims.height,
-        size: formatBytes(stat.size || 0),
+      const sizes: Record<string, { url: string; width: number; height: number; size: string }> = {
+        original: {
+          url: `/uploads/products/original/${originalName}`,
+          width: originalMeta.width || 0,
+          height: originalMeta.height || 0,
+          size: formatBytes(originalMeta.size || 0),
+        },
       }
-    }
 
-    return NextResponse.json({
-      success: true,
-      fileName: `${prefix}-medium.webp`,
-      sizes,
-      mainUrl: sizes.medium.url,
-    })
+      for (const [name, dims] of Object.entries(SIZES)) {
+        const fileName = `${prefix}-${name}.webp`
+        const filePath = path.join(UPLOAD_BASE, name, fileName)
+        await sharp(buffer)
+          .resize(dims.width, dims.height, { fit: 'cover' })
+          .webp({ quality: 80 })
+          .toFile(filePath)
+        const stat = await sharp(filePath).metadata()
+        sizes[name] = {
+          url: `/uploads/products/${name}/${fileName}`,
+          width: dims.width,
+          height: dims.height,
+          size: formatBytes(stat.size || 0),
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        fileName: `${prefix}-medium.webp`,
+        sizes,
+        mainUrl: sizes.medium.url,
+      })
+    } catch (fsErr) {
+      // Fallback for serverless environments (e.g. Vercel read-only filesystem)
+      console.warn('Local FS write unavailable, returning Data URL fallback:', fsErr)
+      const resizedBuffer = await sharp(buffer)
+        .resize(500, 667, { fit: 'cover' })
+        .webp({ quality: 80 })
+        .toBuffer()
+      const dataUrl = `data:image/webp;base64,${resizedBuffer.toString('base64')}`
+
+      return NextResponse.json({
+        success: true,
+        fileName: `${prefix}-medium.webp`,
+        sizes: {
+          medium: {
+            url: dataUrl,
+            width: 500,
+            height: 667,
+            size: formatBytes(resizedBuffer.length),
+          },
+        },
+        mainUrl: dataUrl,
+      })
+    }
   } catch (err) {
     console.error('Upload error:', err)
     return NextResponse.json(
@@ -109,8 +121,6 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
