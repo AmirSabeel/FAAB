@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { ALL_PRODUCTS } from '@/data/products'
+import { getProductOverrides } from '@/lib/product-overrides'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,6 +19,7 @@ const FALLBACK_TRENDING_ITEMS = ALL_PRODUCTS.slice(0, 8).map((p) => ({
 
 export async function GET() {
   try {
+    const overrides = getProductOverrides()
     const dbProducts = await db.product.findMany({
       where: { status: 'active' },
       orderBy: { createdAt: 'desc' },
@@ -27,9 +29,14 @@ export async function GET() {
     const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
 
     const merged = FALLBACK_TRENDING_ITEMS.map((item) => {
-      const match = dbMapByName.get(item.name.toLowerCase().trim()) || dbMapById.get(item.id)
+      const key = item.name.toLowerCase().trim()
+      const override = overrides[key]
+      const match = dbMapByName.get(key) || dbMapById.get(item.id)
+
+      let res = item
       if (match) {
-        return {
+        res = {
+          ...res,
           id: match.id,
           name: match.name,
           price: match.price,
@@ -40,7 +47,16 @@ export async function GET() {
           isNew: match.isNew,
         }
       }
-      return item
+      if (override) {
+        res = {
+          ...res,
+          price: Number(override.price) || res.price,
+          originalPrice: override.originalPrice !== undefined ? (override.originalPrice ? Number(override.originalPrice) : null) : res.originalPrice,
+          image: override.image || res.image,
+          name: override.name || res.name,
+        }
+      }
+      return res
     })
 
     return NextResponse.json(merged, {

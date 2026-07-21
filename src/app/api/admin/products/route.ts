@@ -2,12 +2,10 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { ALL_PRODUCTS } from '@/data/products'
+import { getProductOverrides, saveProductOverride, deleteProductOverride } from '@/lib/product-overrides'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-// In-memory store for fallback overrides when DB is read-only on Vercel
-const memoryOverrides = new Map<string, any>()
 
 const FALLBACK_ADMIN_PRODUCTS = ALL_PRODUCTS.map((p, i) => ({
   id: p.id || `prod-${i + 1}`,
@@ -75,43 +73,40 @@ export async function GET(req: NextRequest) {
   try {
     await ensureDefaultProducts()
 
-    // 1. Fetch all DB products
+    const overrides = getProductOverrides()
     const dbProducts = await db.product.findMany({
       orderBy: { createdAt: 'desc' },
     }).catch(() => [])
 
-    // 2. Map existing DB products by name and id
     const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
     const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
 
-    // 3. Build merged list starting with fallbacks and overrides
     const mergedList: Array<any> = []
     const processedDbIds = new Set<string>()
 
     for (const fallback of FALLBACK_ADMIN_PRODUCTS) {
-      const overrideKey = fallback.name.toLowerCase().trim()
-      const override = memoryOverrides.get(overrideKey)
-      const match = dbMapByName.get(overrideKey) || dbMapById.get(fallback.id)
+      const key = fallback.name.toLowerCase().trim()
+      const override = overrides[key]
+      const match = dbMapByName.get(key) || dbMapById.get(fallback.id)
 
-      if (override) {
-        mergedList.push({ ...fallback, ...match, ...override })
-        if (match) processedDbIds.add(match.id)
-      } else if (match) {
-        mergedList.push(match)
+      let item = fallback
+      if (match) {
+        item = { ...item, ...match }
         processedDbIds.add(match.id)
-      } else {
-        mergedList.push(fallback)
       }
+      if (override) {
+        item = { ...item, ...override }
+      }
+      mergedList.push(item)
     }
 
     for (const dbP of dbProducts) {
       if (!processedDbIds.has(dbP.id)) {
-        const override = memoryOverrides.get(dbP.name.toLowerCase().trim())
+        const override = overrides[dbP.name.toLowerCase().trim()]
         mergedList.push(override ? { ...dbP, ...override } : dbP)
       }
     }
 
-    // 4. Apply category & search filters
     let filtered = mergedList
     if (category && category !== 'all' && category !== 'All') {
       filtered = filtered.filter((p) => p.category === category)
@@ -123,12 +118,19 @@ export async function GET(req: NextRequest) {
     const total = filtered.length
     const paginated = filtered.slice((page - 1) * limit, page * limit)
 
-    return NextResponse.json({
-      products: paginated,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit) || 1,
-    })
+    return NextResponse.json(
+      {
+        products: paginated,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
+      }
+    )
   } catch (err) {
     console.error('Error fetching admin products:', err)
     let filtered = FALLBACK_ADMIN_PRODUCTS
@@ -193,7 +195,7 @@ export async function POST(req: NextRequest) {
       } as any
     }
 
-    memoryOverrides.set(name.toLowerCase().trim(), product)
+    saveProductOverride(name, product)
 
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
@@ -261,21 +263,23 @@ export async function PUT(req: NextRequest) {
       }).catch(() => null)
     }
 
-    if (!product) {
-      product = {
-        id,
-        ...updateData,
-        updatedAt: new Date().toISOString(),
-      } as any
+    const finalProduct = {
+      ...(existingProduct || {}),
+      ...updateData,
+      ...(product || {}),
+      id: product?.id || existingProduct?.id || id,
     }
 
-    if (updateData.name) {
-      memoryOverrides.set(String(updateData.name).toLowerCase().trim(), product)
-    } else if (existingProduct?.name) {
-      memoryOverrides.set(existingProduct.name.toLowerCase().trim(), product)
+    const keyName = String(updateData.name || existingProduct?.name || '').trim()
+    if (keyName) {
+      saveProductOverride(keyName, finalProduct)
     }
 
-    return NextResponse.json(product)
+    return NextResponse.json(finalProduct, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
+    })
   } catch (err) {
     console.error('Error updating product:', err)
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
@@ -294,7 +298,7 @@ export async function DELETE(req: NextRequest) {
     const existingProduct = await db.product.findUnique({ where: { id } }).catch(() => null)
     if (existingProduct) {
       await db.product.delete({ where: { id: existingProduct.id } }).catch(() => {})
-      memoryOverrides.delete(existingProduct.name.toLowerCase().trim())
+      deleteProductOverride(existingProduct.name)
     }
 
     return NextResponse.json({ success: true })

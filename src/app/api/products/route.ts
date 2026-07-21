@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { ALL_PRODUCTS } from '@/data/products'
+import { getProductOverrides } from '@/lib/product-overrides'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
   const onSale = searchParams.get('sale') === 'true'
 
   try {
+    const overrides = getProductOverrides()
     const dbProducts = await db.product.findMany({
       where: { status: 'active' },
       orderBy: { createdAt: 'desc' },
@@ -49,9 +51,14 @@ export async function GET(req: NextRequest) {
     const processedDbIds = new Set<string>()
 
     for (const fallback of FALLBACK_PUBLIC_PRODUCTS) {
-      const match = dbMapByName.get(fallback.name.toLowerCase().trim()) || dbMapById.get(fallback.id)
+      const key = fallback.name.toLowerCase().trim()
+      const override = overrides[key]
+      const match = dbMapByName.get(key) || dbMapById.get(fallback.id)
+
+      let item = { ...fallback }
       if (match) {
-        mergedList.push({
+        item = {
+          ...item,
           id: match.id,
           name: match.name,
           price: match.price,
@@ -62,16 +69,26 @@ export async function GET(req: NextRequest) {
           reviewCount: match.reviewCount,
           isNew: match.isNew,
           isFeatured: match.isFeatured,
-        })
+        }
         processedDbIds.add(match.id)
-      } else {
-        mergedList.push(fallback)
       }
+      if (override) {
+        item = {
+          ...item,
+          price: Number(override.price) || item.price,
+          originalPrice: override.originalPrice !== undefined ? (override.originalPrice ? Number(override.originalPrice) : null) : item.originalPrice,
+          image: override.image || item.image,
+          name: override.name || item.name,
+          category: override.category || item.category,
+        }
+      }
+      mergedList.push(item)
     }
 
     for (const dbP of dbProducts) {
       if (!processedDbIds.has(dbP.id)) {
-        mergedList.push({
+        const override = overrides[dbP.name.toLowerCase().trim()]
+        let item = {
           id: dbP.id,
           name: dbP.name,
           price: dbP.price,
@@ -82,7 +99,11 @@ export async function GET(req: NextRequest) {
           reviewCount: dbP.reviewCount,
           isNew: dbP.isNew,
           isFeatured: dbP.isFeatured,
-        })
+        }
+        if (override) {
+          item = { ...item, ...override }
+        }
+        mergedList.push(item)
       }
     }
 
