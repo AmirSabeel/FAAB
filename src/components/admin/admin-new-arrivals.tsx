@@ -143,7 +143,7 @@ export function AdminNewArrivals() {
   const { data: catalogProducts = [], isLoading: catalogLoading } = useQuery<AllProduct[]>({
     queryKey: ['admin-catalog-new-arrivals', debouncedCatalogSearch],
     queryFn: () =>
-      fetch(
+      adminFetch(
         `/api/admin/products?limit=50&status=active&search=${encodeURIComponent(debouncedCatalogSearch)}`
       )
         .then((r) => r.json())
