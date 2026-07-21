@@ -157,9 +157,11 @@ export function MobileNavDrawer({ isOpen, onClose, onAdminClick }: MobileNavDraw
                         }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
+                          onClose()
                           if (isAdminItem) {
-                            onClose()
                             onAdminClick?.()
+                          } else if (link.href && link.href !== '#') {
+                            window.location.href = link.href
                           }
                         }}
                         className={cn(

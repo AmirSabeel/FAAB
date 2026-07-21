@@ -63,10 +63,15 @@ export default function Home() {
   const cartCount = useCartStore((s) => s.totalItems())
 
   const handleAdminClick = useCallback(() => {
+    if (isAdmin) {
+      useAdminStore.getState().setActiveTab('dashboard')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     setAdminPassword('')
     setAdminPasswordError('')
     setPasswordPromptOpen(true)
-  }, [setPasswordPromptOpen])
+  }, [isAdmin, setPasswordPromptOpen])
 
   const handleAdminPasswordSubmit = useCallback(() => {
     if (adminPassword === ADMIN_PASSWORD) {

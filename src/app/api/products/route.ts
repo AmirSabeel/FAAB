@@ -11,103 +11,104 @@ const CATEGORIES = [
   'Watches',
 ]
 
-const SORT_MAP: Record<string, Record<string, string>> = {
-  newest: { createdAt: 'desc' },
-  'price-asc': { price: 'asc' },
-  'price-desc': { price: 'desc' },
-  name: { name: 'asc' },
-  rating: { rating: 'desc' },
-}
-
-async function ensureDefaultProducts() {
-  const count = await db.product.count()
-  if (count === 0) {
-    for (let i = 0; i < ALL_PRODUCTS.length; i++) {
-      const p = ALL_PRODUCTS[i]
-      await db.product.create({
-        data: {
-          name: p.name,
-          description: p.description,
-          price: p.price,
-          originalPrice: p.originalPrice || null,
-          image: p.image,
-          category: p.category,
-          rating: p.rating || 4.8,
-          reviewCount: p.reviewCount || 10,
-          stock: 25,
-          status: 'active',
-          isFeatured: true,
-          isNew: p.isNew || false,
-          isTrending: p.id.startsWith('trend-'),
-          trendingOrder: p.id.startsWith('trend-') ? i + 1 : 0,
-          newArrivalOrder: p.id.startsWith('new-') ? i + 1 : 0,
-          sizes: JSON.stringify(p.sizes || []),
-          colors: JSON.stringify(p.colors || []),
-        },
-      }).catch(() => {})
-    }
-  }
-}
+const FALLBACK_PUBLIC_PRODUCTS = ALL_PRODUCTS.map((p, i) => ({
+  id: p.id || `prod-${i + 1}`,
+  name: p.name,
+  description: p.description,
+  price: p.price,
+  originalPrice: p.originalPrice || null,
+  image: p.image,
+  category: p.category,
+  rating: p.rating || 4.8,
+  reviewCount: p.reviewCount || 10,
+  isNew: p.isNew || false,
+  isFeatured: true,
+}))
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category') || ''
-  const sort = searchParams.get('sort') || 'newest'
-  const search = searchParams.get('search') || ''
+  const search = (searchParams.get('search') || '').toLowerCase().trim()
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '24')
   const onSale = searchParams.get('sale') === 'true'
 
-  const where: Record<string, unknown> = { status: 'active' }
-
-  if (category && category !== 'All') {
-    where.category = category
-  }
-  if (search) {
-    where.name = { contains: search }
-  }
-  if (onSale) {
-    where.originalPrice = { not: null }
-  }
-
-  const orderBy = SORT_MAP[sort] || { createdAt: 'desc' }
-
   try {
-    await ensureDefaultProducts()
-    const [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy,
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          originalPrice: true,
-          image: true,
-          category: true,
-          rating: true,
-          reviewCount: true,
-          isNew: true,
-          isFeatured: true,
-        },
-      }),
-      db.product.count({ where }),
-    ])
+    const dbProducts = await db.product.findMany({
+      where: { status: 'active' },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => [])
+
+    const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
+    const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
+
+    const mergedList: Array<any> = []
+    const processedDbIds = new Set<string>()
+
+    for (const fallback of FALLBACK_PUBLIC_PRODUCTS) {
+      const match = dbMapByName.get(fallback.name.toLowerCase().trim()) || dbMapById.get(fallback.id)
+      if (match) {
+        mergedList.push({
+          id: match.id,
+          name: match.name,
+          price: match.price,
+          originalPrice: match.originalPrice,
+          image: match.image,
+          category: match.category,
+          rating: match.rating,
+          reviewCount: match.reviewCount,
+          isNew: match.isNew,
+          isFeatured: match.isFeatured,
+        })
+        processedDbIds.add(match.id)
+      } else {
+        mergedList.push(fallback)
+      }
+    }
+
+    for (const dbP of dbProducts) {
+      if (!processedDbIds.has(dbP.id)) {
+        mergedList.push({
+          id: dbP.id,
+          name: dbP.name,
+          price: dbP.price,
+          originalPrice: dbP.originalPrice,
+          image: dbP.image,
+          category: dbP.category,
+          rating: dbP.rating,
+          reviewCount: dbP.reviewCount,
+          isNew: dbP.isNew,
+          isFeatured: dbP.isFeatured,
+        })
+      }
+    }
+
+    let filtered = mergedList
+    if (category && category !== 'All' && category !== 'all') {
+      filtered = filtered.filter((p) => p.category === category)
+    }
+    if (search) {
+      filtered = filtered.filter((p) => p.name.toLowerCase().includes(search))
+    }
+    if (onSale) {
+      filtered = filtered.filter((p) => p.originalPrice && p.originalPrice > p.price)
+    }
+
+    const total = filtered.length
+    const paginated = filtered.slice((page - 1) * limit, page * limit)
 
     return NextResponse.json({
-      products,
+      products: paginated,
       total,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit) || 1,
       categories: CATEGORIES,
     })
   } catch (err) {
     console.error('Error in public products API:', err)
     return NextResponse.json({
-      products: ALL_PRODUCTS,
-      total: ALL_PRODUCTS.length,
+      products: FALLBACK_PUBLIC_PRODUCTS,
+      total: FALLBACK_PUBLIC_PRODUCTS.length,
       page: 1,
       totalPages: 1,
       categories: CATEGORIES,
