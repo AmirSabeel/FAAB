@@ -25,8 +25,8 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     }).catch(() => [])
 
-    const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
-    const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
+    const dbMapByName = new Map<string, any>(dbProducts.map((p) => [p.name.toLowerCase().trim(), p] as [string, any]))
+    const dbMapById = new Map<string, any>(dbProducts.map((p) => [p.id, p] as [string, any]))
 
     const merged = FALLBACK_NEW_ITEMS.map((item) => {
       const key = item.name.toLowerCase().trim()

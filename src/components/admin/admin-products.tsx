@@ -106,7 +106,7 @@ function safeParseJSON<T>(str: string | undefined | null, fallback: T): T {
   if (!str) return fallback
   try {
     const parsed = JSON.parse(str)
-    return Array.isArray(parsed) ? parsed : fallback
+    return Array.isArray(parsed) ? (parsed as any) : fallback
   } catch {
     return fallback
   }

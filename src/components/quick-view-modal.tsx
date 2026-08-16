@@ -62,7 +62,7 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-};
+} as const;
 
 const panelVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -83,7 +83,7 @@ const panelVariants = {
       ease: 'easeIn',
     },
   },
-};
+} as const;
 
 const contentVariants = {
   hidden: { opacity: 0 },
@@ -101,7 +101,7 @@ const contentVariants = {
       staggerDirection: -1,
     },
   },
-};
+} as const;
 
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -115,7 +115,7 @@ const itemVariants = {
     y: 10,
     transition: { duration: 0.15, ease: 'easeIn' },
   },
-};
+} as const;
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 

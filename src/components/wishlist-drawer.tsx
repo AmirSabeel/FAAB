@@ -20,7 +20,7 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-};
+} as const;
 
 const panelVariants = {
   hidden: { x: '100%' },
@@ -42,7 +42,7 @@ const panelVariants = {
       mass: 0.8,
     },
   },
-};
+} as const;
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -53,7 +53,7 @@ const listVariants = {
       delayChildren: 0.15,
     },
   },
-};
+} as const;
 
 const itemVariants = {
   hidden: { opacity: 0, x: 24 },
@@ -80,7 +80,7 @@ const itemVariants = {
       stiffness: 300,
     },
   },
-};
+} as const;
 
 const emptyVariants = {
   hidden: { opacity: 0, scale: 0.9 },
@@ -89,7 +89,7 @@ const emptyVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: [0.22, 1, 0.36, 1],
+      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
   exit: {
@@ -97,7 +97,7 @@ const emptyVariants = {
     scale: 0.9,
     transition: { duration: 0.2 },
   },
-};
+} as const;
 
 /* ========== Component ========== */
 

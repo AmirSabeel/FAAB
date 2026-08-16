@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. Sales by category (from order items -> product category)
-    let categorySalesRaw: Array<{ productId: string; _sum: { quantity: number | null; price: number | null } }> = []
+    let categorySalesRaw: any = []
     try {
       categorySalesRaw = await db.orderItem.groupBy({
         by: ['productId'],
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       ? await db.product.findMany({ where: { id: { in: productIds } }, select: { id: true, category: true } })
       : []
 
-    const categoryMap = new Map(products.map((p) => [p.id, p.category]))
+    const categoryMap = new Map<string, string>(products.map((p) => [p.id, p.category] as [string, string]))
     const categoryRevenue: Record<string, number> = {}
     for (const item of categorySalesRaw) {
       const cat = categoryMap.get(item.productId) || 'Other'

@@ -7,12 +7,12 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    if (!session?.user || !(session.user as any).id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       select: {
         id: true,
         name: true,
@@ -51,7 +51,7 @@ export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) {
+    if (!session?.user || !(session.user as any).id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -59,7 +59,7 @@ export async function PUT(req: Request) {
     const { name, phone, city, country } = body
 
     const user = await db.user.update({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       data: { name, phone, city, country },
       select: {
         id: true,

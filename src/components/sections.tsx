@@ -14,11 +14,11 @@ interface TrendingProductData {
   id: string;
   name: string;
   price: number;
-  originalPrice: number | null;
+  originalPrice?: number | null;
   image: string;
   rating: number;
   reviewCount: number;
-  isNew: boolean;
+  isNew?: boolean;
 }
 
 /* ============================================================
@@ -93,7 +93,7 @@ function SectionHeading({
    1. CategoriesSection
    ============================================================ */
 
-interface CategoryData { id: string; name: string; image: string; link: string }
+interface CategoryData { id?: string; name: string; image: string; link: string }
 
 const FALLBACK_CATEGORIES: CategoryData[] = [
   { name: "Women's Fashion", image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop&q=80', link: "/shop?category=Women's Fashion" },
@@ -161,7 +161,7 @@ export function CategoriesSection() {
    2. FeaturedCollections
    ============================================================ */
 
-interface CollectionData { id: string; name: string; image: string; itemCount: number; link: string }
+interface CollectionData { id?: string; name: string; image: string; itemCount: number; link: string }
 
 const FALLBACK_COLLECTIONS: CollectionData[] = [
   { name: 'Summer Essentials', itemCount: 12, image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop&q=80', link: '/shop' },
@@ -322,7 +322,7 @@ const FALLBACK_TRENDING = [
   },
 ];
 
-function computeBadge(price: number, originalPrice: number | null): string | undefined {
+function computeBadge(price: number, originalPrice: number | null | undefined): string | undefined {
   if (originalPrice && originalPrice > price) {
     const pct = Math.round(((originalPrice - price) / originalPrice) * 100)
     return `-${pct}%`
@@ -384,11 +384,11 @@ interface NewArrivalProductData {
   id: string
   name: string
   price: number
-  originalPrice: number | null
+  originalPrice?: number | null
   image: string
   rating: number
   reviewCount: number
-  isNew: boolean
+  isNew?: boolean
 }
 
 const FALLBACK_NEW_ARRIVALS = [

@@ -55,7 +55,7 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-}
+} as const
 
 const drawerVariants = {
   hidden: { x: '100%' },
@@ -65,9 +65,9 @@ const drawerVariants = {
   },
   exit: {
     x: '100%',
-    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const },
   },
-}
+} as const
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

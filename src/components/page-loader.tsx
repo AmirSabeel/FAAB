@@ -14,10 +14,10 @@ const letterVariants = {
     transition: {
       delay: i * 0.12,
       duration: 0.5,
-      ease: [0.16, 1, 0.3, 1],
+      ease: [0.16, 1, 0.3, 1] as const,
     },
   }),
-};
+} as const;
 
 const fadeOutVariants = {
   visible: { opacity: 1 },
@@ -25,7 +25,7 @@ const fadeOutVariants = {
     opacity: 0,
     transition: { duration: 0.5, ease: 'easeIn', delay: 0.1 },
   },
-};
+} as const;
 
 export function PageLoader() {
   const [isVisible, setIsVisible] = useState(true);

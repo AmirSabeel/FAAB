@@ -44,7 +44,7 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-};
+} as const;
 
 const panelVariants = {
   hidden: { opacity: 0, y: -20, scale: 0.98 },
@@ -52,7 +52,7 @@ const panelVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
   },
   exit: {
     opacity: 0,
@@ -60,7 +60,7 @@ const panelVariants = {
     scale: 0.98,
     transition: { duration: 0.2, ease: 'easeIn' },
   },
-};
+} as const;
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);

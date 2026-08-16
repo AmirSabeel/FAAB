@@ -7,8 +7,8 @@ import { authOptions } from '@/lib/auth'
 
 async function getUser() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return null
-  return session.user.id as string
+  if (!session?.user || !(session.user as any).id) return null
+  return (session.user as any).id as string
 }
 
 // ── GET: Fetch user's cart from DB ────────────────────────────────────────────
@@ -66,7 +66,6 @@ export async function PUT(req: NextRequest) {
         color: item.color || null,
         quantity: item.quantity,
       })),
-      skipDuplicates: true,
     })
   }
 

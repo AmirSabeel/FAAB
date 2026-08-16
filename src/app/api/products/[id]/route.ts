@@ -8,7 +8,7 @@ export const revalidate = 0
 function safeParseJSON<T>(str: string, fallback: T): T {
   try {
     const parsed = JSON.parse(str)
-    return Array.isArray(parsed) ? parsed : fallback
+    return Array.isArray(parsed) ? (parsed as any) : fallback
   } catch {
     return fallback
   }

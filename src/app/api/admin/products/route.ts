@@ -78,8 +78,8 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     }).catch(() => [])
 
-    const dbMapByName = new Map(dbProducts.map((p) => [p.name.toLowerCase().trim(), p]))
-    const dbMapById = new Map(dbProducts.map((p) => [p.id, p]))
+    const dbMapByName = new Map<string, any>(dbProducts.map((p) => [p.name.toLowerCase().trim(), p] as [string, any]))
+    const dbMapById = new Map<string, any>(dbProducts.map((p) => [p.id, p] as [string, any]))
 
     const mergedList: Array<any> = []
     const processedDbIds = new Set<string>()

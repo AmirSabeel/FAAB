@@ -1,4 +1,4 @@
-﻿import { db } from '@/lib/db'
+import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     let userId: string | null = null
     try {
       const session = await getServerSession(authOptions)
-      userId = session?.user?.id || null
+      userId = (session?.user as any)?.id || null
     } catch { userId = null }
 
     // Calculate totals

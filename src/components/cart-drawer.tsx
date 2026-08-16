@@ -144,14 +144,14 @@ export function useCartDbSync() {
 
   // Load from DB when user logs in (only once per login)
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id && _hydrated) {
+    if (status === 'authenticated' && (session?.user as any)?.id && _hydrated) {
       _loadFromDb();
     }
-  }, [status, session?.user?.id, _hydrated, _loadFromDb]);
+  }, [status, (session?.user as any)?.id, _hydrated, _loadFromDb]);
 
   // Sync to DB on item changes (debounced)
   useEffect(() => {
-    if (status !== 'authenticated' || !session?.user?.id || !_hydrated) return;
+    if (status !== 'authenticated' || !(session?.user as any)?.id || !_hydrated) return;
 
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     syncTimeoutRef.current = setTimeout(() => {
@@ -161,7 +161,7 @@ export function useCartDbSync() {
     return () => {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
-  }, [items, status, session?.user?.id, _hydrated, _syncToDb]);
+  }, [items, status, (session?.user as any)?.id, _hydrated, _syncToDb]);
 }
 
 // ─── Props ───────────────────────────────────────────────────────────────────

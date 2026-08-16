@@ -60,19 +60,19 @@ interface ApiRelatedItem {
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
-}
+} as const
 
 const staggerContainer = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.08 },
   },
-}
+} as const
 
 const staggerItem = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
-}
+} as const
 
 // ─── Features ────────────────────────────────────────────────────────────────
 
@@ -212,6 +212,49 @@ export default function ProductDetailPage() {
       }))
     : staticRelated
 
+  // ── Derived values (guarded for safety before hooks) ──
+  const images = product ? (product.images.length > 0 ? product.images : [product.image]) : []
+  const sizes = product ? (product.sizes.length > 0 ? product.sizes : ['One Size']) : []
+  const colors = product ? (product.colors.length > 0 ? product.colors : []) : []
+
+  // ── Callbacks (Hooks) ──
+  const handleAddToCart = useCallback(() => {
+    if (!product) return
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0],
+      size: sizes[selectedSize],
+      color: colors[selectedColor]?.name,
+    })
+    setAddedToCart(true)
+    toast.success('Added to cart', {
+      description: `${product.name}${sizes[selectedSize] !== 'One Size' ? ` (${sizes[selectedSize]})` : ''}`,
+      duration: 2000,
+    })
+    setTimeout(() => setAddedToCart(false), 1500)
+  }, [product, addItem, selectedSize, selectedColor, images, sizes, colors])
+
+  const handleWishlist = useCallback(() => {
+    if (!product) return
+    wishlistToggleItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0],
+    })
+  }, [product, wishlistToggleItem, images])
+
+  const decrementQuantity = useCallback(() => {
+    setQuantity((prev) => Math.max(1, prev - 1))
+  }, [])
+
+  const incrementQuantity = useCallback(() => {
+    setQuantity((prev) => Math.min(99, prev + 1))
+  }, [])
+
+  // ── Early Returns (Must be placed AFTER all hooks) ──
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
@@ -230,46 +273,7 @@ export default function ProductDetailPage() {
 
   if (loading) return <ProductDetailSkeleton />
 
-  // ── Derived values ──
-  const images = product.images.length > 0 ? product.images : [product.image]
-  const sizes = product.sizes.length > 0 ? product.sizes : ['One Size']
-  const colors = product.colors.length > 0 ? product.colors : []
-
   const wishlisted = isWishlisted(product.id)
-
-  const handleAddToCart = useCallback(() => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: images[0],
-      size: sizes[selectedSize],
-      color: colors[selectedColor]?.name,
-    })
-    setAddedToCart(true)
-    toast.success('Added to cart', {
-      description: `${product.name}${sizes[selectedSize] !== 'One Size' ? ` (${sizes[selectedSize]})` : ''}`,
-      duration: 2000,
-    })
-    setTimeout(() => setAddedToCart(false), 1500)
-  }, [product, addItem, selectedSize, selectedColor, images, sizes, colors])
-
-  const handleWishlist = useCallback(() => {
-    wishlistToggleItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: images[0],
-    })
-  }, [product, wishlistToggleItem, images])
-
-  const decrementQuantity = useCallback(() => {
-    setQuantity((prev) => Math.max(1, prev - 1))
-  }, [])
-
-  const incrementQuantity = useCallback(() => {
-    setQuantity((prev) => Math.min(99, prev + 1))
-  }, [])
 
   const discountPercent =
     product.originalPrice && product.price < product.originalPrice

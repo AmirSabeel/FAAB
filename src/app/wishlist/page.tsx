@@ -51,7 +51,7 @@ const containerVariants = {
   visible: {
     transition: { staggerChildren: 0.06, delayChildren: 0.1 },
   },
-}
+} as const
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
@@ -67,7 +67,7 @@ const cardVariants = {
     y: -12,
     transition: { duration: 0.25 },
   },
-}
+} as const
 
 // ─── Wishlist Product Card ────────────────────────────────────────────────
 

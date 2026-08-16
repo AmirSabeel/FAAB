@@ -21,7 +21,7 @@ const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 },
-}
+} as const
 
 const panelVariants = {
   hidden: { opacity: 0, y: 40, scale: 0.97 },
@@ -37,16 +37,16 @@ const panelVariants = {
     scale: 0.97,
     transition: { duration: 0.2, ease: 'easeIn' },
   },
-}
+} as const
 
 const fieldVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: 0.15 + i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: 0.15 + i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
   }),
-}
+} as const
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
