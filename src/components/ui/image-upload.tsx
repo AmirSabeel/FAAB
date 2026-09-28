@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Image as ImageIcon, Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { adminFetch } from '@/lib/admin-fetch'
 
 interface SizeInfo {
   url: string
@@ -74,7 +75,7 @@ export function ImageUpload({ value, onChange, label = 'Product Image' }: ImageU
         })
       }, 200)
 
-      const res = await fetch('/api/upload', {
+      const res = await adminFetch('/api/upload', {
         method: 'POST',
         body: formData,
       })

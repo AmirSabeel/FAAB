@@ -5,6 +5,9 @@ import sharp from 'sharp'
 import crypto from 'crypto'
 import { requireAdmin } from '@/lib/admin-auth'
 
+// Disable sharp cache to prevent file locking on Windows
+sharp.cache(false)
+
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
