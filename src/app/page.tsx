@@ -17,6 +17,7 @@ import { Navbar } from '@/components/navbar'
 import { useMobileNav, MobileNavDrawer, BottomNavBar } from '@/components/mobile-nav'
 import HeroSlider from '@/components/hero-slider'
 import { CategoriesSection, FeaturedCollections, TrendingProducts, NewArrivals } from '@/components/sections'
+import { FlashSaleSection } from '@/components/flash-sale-section'
 import { PromoBanner, CustomerReviews, FeaturesSection, AnimatedStats, NewsletterSection, FAQSection, Footer } from '@/components/sections-bottom'
 import { BackToTop, WhatsAppButton } from '@/components/floating-buttons'
 import { SearchModal } from '@/components/search-modal'
@@ -253,6 +254,7 @@ export default function Home() {
       <main className="min-h-screen">
         <HeroSlider />
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><CategoriesSection /></section>
+        <FlashSaleSection onQuickView={handleQuickView} />
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FeaturedCollections /></section>
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><TrendingProducts onQuickView={handleQuickView} /></section>
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><NewArrivals onQuickView={handleQuickView} /></section>
