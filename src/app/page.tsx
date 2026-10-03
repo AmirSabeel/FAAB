@@ -253,17 +253,17 @@ export default function Home() {
 
       <main className="min-h-screen">
         <HeroSlider />
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><CategoriesSection /></section>
+        <CategoriesSection />
         <FlashSaleSection onQuickView={handleQuickView} />
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FeaturedCollections /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><TrendingProducts onQuickView={handleQuickView} /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><NewArrivals onQuickView={handleQuickView} /></section>
+        <FeaturedCollections />
+        <TrendingProducts onQuickView={handleQuickView} />
+        <NewArrivals onQuickView={handleQuickView} />
         <PromoBanner />
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><CustomerReviews /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FeaturesSection /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><AnimatedStats /></section>
+        <CustomerReviews />
+        <FeaturesSection />
+        <AnimatedStats />
         <NewsletterSection />
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FAQSection /></section>
+        <FAQSection />
       </main>
       <Footer />
       <BottomNavBar onSearchClick={() => setSearchOpen(true)} onCartClick={() => setCartOpen(true)} onAuthClick={() => setAuthOpen(true)} onProfileClick={() => setProfileOpen(true)} />
