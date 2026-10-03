@@ -62,6 +62,20 @@ export default function Home() {
   const { isOpen, close, toggle } = useMobileNav()
   const cartCount = useCartStore((s) => s.totalItems())
 
+  const handleQuickView = useCallback((product: any) => {
+    setQuickViewProduct({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice || undefined,
+      image: product.image,
+      rating: product.rating || 4.8,
+      reviewCount: product.reviewCount || 0,
+      description: product.description,
+    })
+    setQuickViewOpen(true)
+  }, [])
+
   const handleAdminClick = useCallback(() => {
     if (isAdmin) {
       useAdminStore.getState().setActiveTab('dashboard')
@@ -240,8 +254,8 @@ export default function Home() {
         <HeroSlider />
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><CategoriesSection /></section>
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FeaturedCollections /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><TrendingProducts /></section>
-        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><NewArrivals /></section>
+        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><TrendingProducts onQuickView={handleQuickView} /></section>
+        <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><NewArrivals onQuickView={handleQuickView} /></section>
         <PromoBanner />
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><CustomerReviews /></section>
         <section className="py-16 md:py-24 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"><FeaturesSection /></section>

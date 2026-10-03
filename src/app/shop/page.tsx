@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ProductCard from '@/components/product-card'
+import QuickViewModal from '@/components/quick-view-modal'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -104,6 +105,8 @@ function ShopPageContent() {
   const [loading, setLoading] = useState(true)
   const [gridCols, setGridCols] = useState<3 | 4>(4)
   const [sortOpen, setSortOpen] = useState(false)
+  const [quickViewOpen, setQuickViewOpen] = useState(false)
+  const [quickViewProduct, setQuickViewProduct] = useState<any>(null)
 
   // Fetch products
   const fetchProducts = useCallback(async (cat: string, s: string, p: number, sale: boolean, q: string) => {
@@ -337,11 +340,24 @@ function ShopPageContent() {
                     price={product.price}
                     originalPrice={product.originalPrice || undefined}
                     image={product.image}
+                    category={product.category}
                     rating={product.rating}
                     reviewCount={product.reviewCount}
                     badge={product.isFeatured ? 'Featured' : undefined}
                     isNew={product.isNew}
-                    onQuickView={() => router.push(`/product/${product.id}`)}
+                    onQuickView={() => {
+                      setQuickViewProduct({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        originalPrice: product.originalPrice || undefined,
+                        image: product.image,
+                        rating: product.rating,
+                        reviewCount: product.reviewCount,
+                        category: product.category,
+                      })
+                      setQuickViewOpen(true)
+                    }}
                   />
                 </motion.div>
               ))}
@@ -387,6 +403,16 @@ function ShopPageContent() {
           </div>
         )}
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        isOpen={quickViewOpen}
+        onClose={() => {
+          setQuickViewOpen(false)
+          setQuickViewProduct(null)
+        }}
+        product={quickViewProduct}
+      />
     </div>
   )
 }

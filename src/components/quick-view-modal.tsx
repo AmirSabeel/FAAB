@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -12,6 +13,7 @@ import {
   Check,
   Minus,
   Plus,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/components/cart-drawer';
@@ -431,6 +433,18 @@ function QuickViewPanel({
                 <span>{feature}</span>
               </div>
             ))}
+          </motion.div>
+
+          {/* 11. View Full Details Link */}
+          <motion.div variants={itemVariants} className="pt-2 border-t border-border/40">
+            <Link
+              href={`/product/${product.id}`}
+              onClick={onClose}
+              className="w-full py-2 text-center text-xs font-medium text-muted-foreground hover:text-gold transition-colors flex items-center justify-center gap-1.5 group"
+            >
+              <span>View Full Product Details & Sizing Guide</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform duration-200" />
+            </Link>
           </motion.div>
         </motion.div>
       </div>
