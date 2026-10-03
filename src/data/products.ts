@@ -21,8 +21,8 @@ export const ALL_PRODUCTS: Product[] = [
   {
     id: 'trend-1',
     name: 'Silk Blend Blazer',
-    price: 40587,
-    originalPrice: 58017,
+    price: 800,
+    originalPrice: 999,
     image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&h=667&fit=crop&q=80',
     images: [
       'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&h=1067&fit=crop&q=80',
